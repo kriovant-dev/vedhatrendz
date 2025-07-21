@@ -27,8 +27,9 @@ class EmailService {
   private readonly emailServerUrl: string;
 
   constructor() {
-    // Use environment variable for email server URL, fallback to localhost
-    this.emailServerUrl = import.meta.env.VITE_EMAIL_SERVER_URL || 'http://localhost:3001';
+    // Use environment variable for email server URL, fallback to Vercel API
+    this.emailServerUrl = import.meta.env.VITE_EMAIL_SERVER_URL || 
+                         (import.meta.env.PROD ? '/api' : 'http://localhost:3001');
   }
 
   private formatPrice(price: number): string {
@@ -248,7 +249,7 @@ class EmailService {
     text?: string;
   }): Promise<boolean> {
     try {
-      const response = await fetch(`${this.emailServerUrl}/api/send-email`, {
+      const response = await fetch(`${this.emailServerUrl}/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -373,7 +374,7 @@ Where tradition meets elegance
 
   async testEmailConnection(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.emailServerUrl}/api/health`);
+      const response = await fetch(`${this.emailServerUrl}/health`);
       return response.ok;
     } catch (error) {
       console.error('Email service not available:', error);
