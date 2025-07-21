@@ -28,8 +28,29 @@ class EmailService {
 
   constructor() {
     // Use environment variable for email server URL, fallback to Vercel API
-    this.emailServerUrl = import.meta.env.VITE_EMAIL_SERVER_URL || 
-                         (import.meta.env.PROD ? '/api' : 'http://localhost:3001');
+    const envUrl = import.meta.env.VITE_EMAIL_SERVER_URL;
+    const isProd = import.meta.env.PROD;
+    const isDev = import.meta.env.DEV;
+    
+    // Determine the email server URL
+    if (envUrl) {
+      this.emailServerUrl = envUrl;
+    } else if (isProd || window.location.origin.includes('vercel.app')) {
+      // If in production or on Vercel, use the current origin + /api
+      this.emailServerUrl = `${window.location.origin}/api`;
+    } else {
+      // Development fallback
+      this.emailServerUrl = 'http://localhost:3001';
+    }
+    
+    // Debug logging
+    console.log('🔧 Email Service Configuration:', {
+      VITE_EMAIL_SERVER_URL: envUrl,
+      isProd,
+      isDev,
+      origin: window.location.origin,
+      finalEmailServerUrl: this.emailServerUrl
+    });
   }
 
   private formatPrice(price: number): string {
@@ -249,13 +270,22 @@ class EmailService {
     text?: string;
   }): Promise<boolean> {
     try {
+      // Ensure the URL always has /api prefix for Vercel deployment
+      let emailUrl = `${this.emailServerUrl}/send-email`;
+      
+      // Fix URL if it doesn't contain /api (for Vercel deployment)
+      if (emailUrl.includes('vercel.app') && !emailUrl.includes('/api/')) {
+        emailUrl = emailUrl.replace('/send-email', '/api/send-email');
+      }
+      
       console.log('📤 Sending email to backend:', {
-        url: `${this.emailServerUrl}/send-email`,
+        originalUrl: `${this.emailServerUrl}/send-email`,
+        correctedUrl: emailUrl,
         to: emailData.to,
         subject: emailData.subject
       });
 
-      const response = await fetch(`${this.emailServerUrl}/send-email`, {
+      const response = await fetch(emailUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -397,8 +427,20 @@ Where tradition meets elegance
 
   async testEmailConnection(): Promise<boolean> {
     try {
-      console.log('🔗 Testing email connection to:', `${this.emailServerUrl}/health`);
-      const response = await fetch(`${this.emailServerUrl}/health`);
+      // Ensure the URL always has /api prefix for Vercel deployment
+      let healthUrl = `${this.emailServerUrl}/health`;
+      
+      // Fix URL if it doesn't contain /api (for Vercel deployment)
+      if (healthUrl.includes('vercel.app') && !healthUrl.includes('/api/')) {
+        healthUrl = healthUrl.replace('/health', '/api/health');
+      }
+      
+      console.log('🔗 Testing email connection to:', {
+        originalUrl: `${this.emailServerUrl}/health`,
+        correctedUrl: healthUrl
+      });
+      
+      const response = await fetch(healthUrl);
       console.log('🔗 Email connection test result:', response.ok, response.status);
       return response.ok;
     } catch (error) {
