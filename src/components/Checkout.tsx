@@ -272,28 +272,40 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           shippingAddress: orderData.shipping_address
         };
 
-        // Send admin notification email
-        console.log('📧 Sending admin notification email...');
-        const adminEmailSent = await emailService.sendOrderNotificationToAdmin(emailData);
-        if (adminEmailSent) {
-          console.log('✅ Admin notification email sent successfully');
-        } else {
-          console.log('⚠️ Admin notification email failed');
-        }
+        console.log('📧 Email service URL:', emailService);
+        console.log('📧 Email data prepared:', emailData);
 
-        // Send customer confirmation email
-        if (orderData.customer_email) {
-          console.log('📧 Sending customer confirmation email...');
-          const customerEmailSent = await emailService.sendOrderConfirmationToCustomer(emailData);
-          if (customerEmailSent) {
-            console.log('✅ Customer confirmation email sent successfully');
-            toast.success('Order placed! Check your email for confirmation.');
+        // Test email service connection first
+        const isEmailServiceAvailable = await emailService.testEmailConnection();
+        console.log('🔗 Email service available:', isEmailServiceAvailable);
+
+        if (!isEmailServiceAvailable) {
+          console.warn('⚠️ Email service not available, skipping email notifications');
+          toast.success('Order placed successfully!');
+        } else {
+          // Send admin notification email
+          console.log('📧 Sending admin notification email...');
+          const adminEmailSent = await emailService.sendOrderNotificationToAdmin(emailData);
+          if (adminEmailSent) {
+            console.log('✅ Admin notification email sent successfully');
           } else {
-            console.log('⚠️ Customer confirmation email failed');
+            console.error('❌ Admin notification email failed');
+          }
+
+          // Send customer confirmation email
+          if (orderData.customer_email) {
+            console.log('📧 Sending customer confirmation email...');
+            const customerEmailSent = await emailService.sendOrderConfirmationToCustomer(emailData);
+            if (customerEmailSent) {
+              console.log('✅ Customer confirmation email sent successfully');
+              toast.success('Order placed! Check your email for confirmation.');
+            } else {
+              console.error('❌ Customer confirmation email failed');
+              toast.success('Order placed successfully!');
+            }
+          } else {
             toast.success('Order placed successfully!');
           }
-        } else {
-          toast.success('Order placed successfully!');
         }
       } catch (emailError) {
         console.error('Email sending failed:', emailError);

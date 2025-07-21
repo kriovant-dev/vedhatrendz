@@ -36,7 +36,7 @@ class EmailService {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-    }).format(price / 100);
+    }).format(price); // Remove division by 100 since prices are already in rupees
   }
 
   private generateOrderEmailHTML(orderData: OrderEmailData): string {
@@ -249,6 +249,12 @@ class EmailService {
     text?: string;
   }): Promise<boolean> {
     try {
+      console.log('📤 Sending email to backend:', {
+        url: `${this.emailServerUrl}/send-email`,
+        to: emailData.to,
+        subject: emailData.subject
+      });
+
       const response = await fetch(`${this.emailServerUrl}/send-email`, {
         method: 'POST',
         headers: {
@@ -257,13 +263,20 @@ class EmailService {
         body: JSON.stringify(emailData)
       });
 
+      console.log('📥 Backend response:', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText
+      });
+
       if (!response.ok) {
         const error = await response.json();
+        console.error('❌ Backend error response:', error);
         throw new Error(error.error || `HTTP ${response.status}`);
       }
 
       const result = await response.json();
-      console.log('📧 Email sent successfully:', result.messageId);
+      console.log('✅ Email sent successfully:', result.messageId);
       return true;
     } catch (error) {
       console.error('❌ Failed to send email:', error);
@@ -275,14 +288,24 @@ class EmailService {
     try {
       const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@vedhatrendz.com';
       
-      return await this.sendEmailToBackend({
+      console.log('🔧 Admin email service config:', {
+        adminEmail,
+        emailServerUrl: this.emailServerUrl,
+        orderNumber: orderData.orderNumber,
+        customerName: orderData.customerName
+      });
+
+      const emailSent = await this.sendEmailToBackend({
         to: adminEmail,
-        subject: `🛒 New Order #${orderData.orderNumber} - ${orderData.customerName} (₹${this.formatPrice(orderData.totalAmount).replace('₹', '')})`,
+        subject: `🛒 New Order #${orderData.orderNumber} - ${orderData.customerName} (${this.formatPrice(orderData.totalAmount)})`,
         html: this.generateOrderEmailHTML(orderData),
         text: this.generateOrderEmailText(orderData)
       });
+
+      console.log('📧 Admin email result:', emailSent);
+      return emailSent;
     } catch (error) {
-      console.error('Failed to send admin notification email:', error);
+      console.error('❌ Failed to send admin notification email:', error);
       return false;
     }
   }
@@ -374,10 +397,12 @@ Where tradition meets elegance
 
   async testEmailConnection(): Promise<boolean> {
     try {
+      console.log('🔗 Testing email connection to:', `${this.emailServerUrl}/health`);
       const response = await fetch(`${this.emailServerUrl}/health`);
+      console.log('🔗 Email connection test result:', response.ok, response.status);
       return response.ok;
     } catch (error) {
-      console.error('Email service not available:', error);
+      console.error('❌ Email service not available:', error);
       return false;
     }
   }
