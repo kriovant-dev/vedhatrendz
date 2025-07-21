@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     for (const { name, config } of configs) {
       try {
         console.log(`Testing ${name}...`);
-        const transporter = nodemailer.createTransporter(config);
+        const transporter = nodemailer.createTransport(config);
         await transporter.verify();
         results.push({ name, status: 'success', message: 'Connection verified' });
         console.log(`✅ ${name} - Success`);
