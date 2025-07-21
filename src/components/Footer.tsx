@@ -20,14 +20,23 @@ import {
 const Footer = () => {
   const footerSections = [
     {
-      title: "Shop",
+      title: "Help",
       links: [
-        { label: "New Arrivals", href: "/new-arrivals" },
-        { label: "Wedding Sarees", href: "/wedding" },
-        { label: "Silk Sarees", href: "/silk" },
-        { label: "Cotton Sarees", href: "/cotton" },
-        { label: "Designer Collection", href: "/designer" },
-        { label: "Sale", href: "/sale" }
+        { label: "Terms of Service", href: "/terms" },
+        { label: "Privacy Policy", href: "/privacy" },
+        { label: "Shipping Policy", href: "/shipping-policy" },
+        { label: "Refund Policy", href: "/refund-policy" },
+        { label: "Reset Password", href: "/reset-password" }
+      ]
+    },
+    {
+      title: "Discover",
+      links: [
+        { label: "Shop", href: "/sarees" },
+        { label: "My Orders", href: "/orders" },
+        { label: "My Account", href: "/profile" },
+        { label: "About Us", href: "/about" },
+        { label: "Admin Panel", href: "/admin" }
       ]
     },
     {
@@ -39,18 +48,6 @@ const Footer = () => {
         { label: "Returns & Exchange", href: "/returns" },
         { label: "Track Order", href: "/track" },
         { label: "FAQ", href: "/faq" }
-      ]
-    },
-    {
-      title: "About Us",
-      links: [
-        { label: "Our Story", href: "/story" },
-        { label: "Artisan Partners", href: "/artisans" },
-        { label: "Sustainability", href: "/sustainability" },
-        { label: "Quality Promise", href: "/quality" },
-        { label: "Press & Media", href: "/press" },
-        { label: "Careers", href: "/careers" },
-        { label: "Admin Panel", href: "/admin" }
       ]
     }
   ];

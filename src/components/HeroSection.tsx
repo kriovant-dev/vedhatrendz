@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Star, Sparkles } from 'lucide-react';
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-subtle">
       {/* Background Pattern */}
@@ -29,7 +32,7 @@ const HeroSection = () => {
           <div className="text-center lg:text-left animate-fade-up">
             <div className="mb-6">
               <span className="inline-block px-4 py-2 rounded-full bg-saree-gold/10 text-saree-burgundy text-sm font-medium border border-saree-gold/20 animate-scale-in">
-                ✨ Premium Collection 2024
+                ✨ Premium Collection 2025
               </span>
             </div>
             
@@ -55,16 +58,10 @@ const HeroSection = () => {
               <Button 
                 size="lg" 
                 className="gradient-primary text-primary-foreground hover:scale-105 transition-smooth shadow-elegant group"
+                onClick={() => navigate('/sarees')}
               >
                 Explore Collection
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-smooth" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth"
-              >
-                View Catalog
               </Button>
             </div>
 

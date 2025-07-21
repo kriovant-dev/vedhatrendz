@@ -16,7 +16,6 @@ import { format } from 'date-fns';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import AdminLogin from '@/components/AdminLogin';
 import ProductManager from '@/components/ProductManager';
-import { NotificationService } from '@/services/smsService';
 
 interface Order {
   id: string;

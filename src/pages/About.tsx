@@ -158,54 +158,6 @@ const About = () => {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-16 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-3xl font-bold mb-4">Meet Our Team</h2>
-            <p className="text-muted-foreground text-lg">
-              The passionate people behind VedhaTrendz
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                name: 'Priya Sharma',
-                role: 'Founder & CEO',
-                image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300',
-                description: 'Passionate about preserving Indian textile heritage'
-              },
-              {
-                name: 'Rajesh Kumar',
-                role: 'Head of Design',
-                image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300',
-                description: 'Expert in traditional and contemporary saree designs'
-              },
-              {
-                name: 'Anita Patel',
-                role: 'Quality Manager',
-                image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300',
-                description: 'Ensures every saree meets our quality standards'
-              }
-            ].map((member, index) => (
-              <Card key={index} className="text-center hover:shadow-elegant transition-all duration-300">
-                <CardContent className="p-6">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
-                  />
-                  <h3 className="font-semibold text-lg mb-1">{member.name}</h3>
-                  <Badge variant="secondary" className="mb-3">{member.role}</Badge>
-                  <p className="text-muted-foreground text-sm">{member.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <Footer />
     </div>
   );

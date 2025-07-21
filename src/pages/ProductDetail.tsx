@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Checkout from '@/components/Checkout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -40,6 +41,7 @@ const ProductDetail = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showCheckout, setShowCheckout] = useState(false);
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', id],
@@ -129,24 +131,9 @@ const ProductDetail = () => {
       return;
     }
     
-    // Add to cart first
-    addToCart({
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      color: selectedColor,
-      size: selectedSize,
-      quantity: quantity,
-      image: product.images?.[0]
-    });
-    
+    // Don't add to cart for Buy Now, just open checkout with specific item
+    setShowCheckout(true);
     toast.success('Proceeding to checkout...');
-    console.log('Buy now:', {
-      productId: id,
-      color: selectedColor,
-      size: selectedSize,
-      quantity
-    });
   };
 
   if (isLoading) {
@@ -426,6 +413,21 @@ const ProductDetail = () => {
       </div>
 
       <Footer />
+      
+      <Checkout
+        isOpen={showCheckout}
+        onClose={() => setShowCheckout(false)}
+        buyNowItem={showCheckout && product ? {
+          id: `buynow-${product.id}-${Date.now()}`,
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          color: selectedColor,
+          size: selectedSize,
+          quantity: quantity,
+          image: product.images?.[0]
+        } : undefined}
+      />
     </div>
   );
 };

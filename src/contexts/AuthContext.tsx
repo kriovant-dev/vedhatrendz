@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from '@/integrations/firebase/config';
+import React, { createContext, useContext } from 'react';
+import { useUser, useClerk } from '@clerk/clerk-react';
 
 interface AuthContextType {
-  user: User | null;
+  user: any | null;
   loading: boolean;
   logout: () => Promise<void>;
+  isSignedIn: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,21 +19,12 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -41,8 +32,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = {
     user,
-    loading,
-    logout
+    loading: !isLoaded,
+    logout,
+    isSignedIn: !!isSignedIn
   };
 
   return (

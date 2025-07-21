@@ -19,12 +19,16 @@ import { Input } from '@/components/ui/input';
 import { Link } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import CartDrawer from '@/components/CartDrawer';
+import ClerkAuthComponent, { UserProfile } from '@/components/ClerkAuthComponent';
+import { useUser } from '@clerk/clerk-react';
 
 const Navbar = () => {
   const { getTotalItems } = useCart();
+  const { isSignedIn } = useUser();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
   const cartCount = getTotalItems();
 
@@ -102,9 +106,18 @@ const Navbar = () => {
               </Button>
 
               {/* Profile */}
-              <Button variant="ghost" size="icon" className="hover-glow">
-                <User className="h-5 w-5" />
-              </Button>
+              {isSignedIn ? (
+                <UserProfile />
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="hover-glow"
+                  onClick={() => setIsAuthOpen(true)}
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+              )}
 
               {/* Shopping Cart */}
               <Button 
@@ -177,6 +190,11 @@ const Navbar = () => {
       </nav>
       
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <ClerkAuthComponent 
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
+        mode="signin" 
+      />
     </>
   );
 };
