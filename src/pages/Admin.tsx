@@ -219,13 +219,13 @@ const Admin = () => {
         const provider = selectedOrder.shipping_provider;
         
         // Create the WhatsApp message
-        const message = `Hi ${customerName}! 📦
+        const message = `Hi ${customerName}!
 
 Your order #${orderId} has been shipped via *${provider}*.
 
-🚚 Track your package: *${trackingNumber}*
+Track your package: *${trackingNumber}*
 
-Thank you for choosing Rang-e-Saree Haven! ✨`;
+Thank you for choosing VedhaTrendz! `;
 
         // Format phone number (remove any non-digits and ensure it starts with country code)
         let phoneNumber = selectedOrder.customer_phone.replace(/\D/g, '');
