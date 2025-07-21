@@ -1,5 +1,7 @@
 // Test email endpoint for Vercel
-module.exports = async function handler(req, res) {
+import nodemailer from 'nodemailer';
+
+export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -18,7 +20,6 @@ module.exports = async function handler(req, res) {
     const testEmail = email || process.env.ADMIN_EMAIL || 'test@example.com';
 
     // Import nodemailer
-    const nodemailer = require('nodemailer');
 
     // Create transporter
     const transporter = nodemailer.createTransporter({
