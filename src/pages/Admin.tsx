@@ -285,6 +285,17 @@ Thank you for choosing Rang-e-Saree Haven! ✨`;
     return (
       <div className="min-h-screen bg-background">
         <div className="admin-mobile-container max-w-md mx-auto">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-2 mobile-button"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="mobile-small-text">Back to Home</span>
+            </Button>
+          </div>
           <AdminLogin onLoginSuccess={login} />
         </div>
       </div>

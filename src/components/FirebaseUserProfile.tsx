@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   DropdownMenu,
@@ -23,48 +23,15 @@ import {
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { FirebaseClient } from '@/integrations/firebase/client';
 
 interface FirebaseUserProfileProps {
   className?: string;
-}
-
-interface UserProfile {
-  name?: string;
-  email?: string;
-  phone?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    pincode?: string;
-  };
 }
 
 const FirebaseUserProfile: React.FC<FirebaseUserProfileProps> = ({ className = '' }) => {
   const { user, logout, isSignedIn } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    if (user?.uid) {
-      loadUserProfile();
-    }
-  }, [user]);
-
-  const loadUserProfile = async () => {
-    try {
-      const { data } = await FirebaseClient.getSingle('user_profiles', [
-        { field: 'user_id', operator: '==', value: user?.uid }
-      ]);
-      if (data) {
-        setUserProfile(data);
-      }
-    } catch (error) {
-      console.error('Error loading user profile:', error);
-    }
-  };
 
   if (!isSignedIn || !user) {
     return null;
@@ -103,13 +70,6 @@ const FirebaseUserProfile: React.FC<FirebaseUserProfileProps> = ({ className = '
 
   // Get user initials for avatar fallback
   const getInitials = (): string => {
-    if (userProfile?.name) {
-      const names = userProfile.name.split(' ');
-      if (names.length >= 2) {
-        return `${names[0][0]}${names[1][0]}`.toUpperCase();
-      }
-      return userProfile.name.slice(0, 2).toUpperCase();
-    }
     if (user.displayName) {
       const names = user.displayName.split(' ');
       if (names.length >= 2) {
@@ -125,7 +85,6 @@ const FirebaseUserProfile: React.FC<FirebaseUserProfileProps> = ({ className = '
 
   // Get display name
   const getDisplayName = (): string => {
-    if (userProfile?.name) return userProfile.name;
     if (user.displayName) return user.displayName;
     if (user.phoneNumber) return user.phoneNumber;
     return 'User';
@@ -133,9 +92,7 @@ const FirebaseUserProfile: React.FC<FirebaseUserProfileProps> = ({ className = '
 
   // Get phone number
   const getPhoneNumber = (): string => {
-    if (userProfile?.phone) return userProfile.phone;
-    if (user.phoneNumber) return user.phoneNumber;
-    return 'Not provided';
+    return user.phoneNumber || 'Not provided';
   };
 
   // Calculate days since joined

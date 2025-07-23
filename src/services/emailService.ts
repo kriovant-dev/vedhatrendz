@@ -27,8 +27,12 @@ class EmailService {
   private readonly emailServerUrl: string;
 
   constructor() {
-    // Use environment variable for email server URL, fallback to localhost
-    this.emailServerUrl = import.meta.env.VITE_EMAIL_SERVER_URL || 'http://localhost:3001';
+    // Use current domain for production, fallback to localhost for development
+    if (import.meta.env.PROD) {
+      this.emailServerUrl = window.location.origin;
+    } else {
+      this.emailServerUrl = import.meta.env.VITE_EMAIL_SERVER_URL || 'http://localhost:3001';
+    }
   }
 
   private formatPrice(price: number): string {
@@ -227,7 +231,7 @@ class EmailService {
             </div>
 
             <p style="text-align: center; margin: 20px 0;">
-              <strong>Questions?</strong> Contact us at <a href="mailto:vedhatrendz@gmail.com">vedhatrendz@gmail.com</a> or call us at +91-7702284509
+              <strong>Questions?</strong> Contact us at <a href="mailto:support@vedhatrendz.com">support@vedhatrendz.com</a> or call us at +91-XXXXXXXXXX
             </p>
           </div>
 
@@ -256,14 +260,36 @@ class EmailService {
         body: JSON.stringify(emailData)
       });
 
+      // Check if response is ok
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `HTTP ${response.status}`);
+        console.error(`❌ HTTP Error: ${response.status} ${response.statusText}`);
+        
+        // Try to get error details from response
+        try {
+          const errorData = await response.json();
+          console.error('❌ Error details:', errorData);
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        } catch (jsonError) {
+          // If response is not JSON, use status text
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
       }
 
-      const result = await response.json();
-      console.log('📧 Email sent successfully:', result.messageId);
-      return true;
+      // Try to parse JSON response
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        console.error('❌ Failed to parse response as JSON:', parseError);
+        throw new Error('Invalid response format from email service');
+      }
+
+      if (result.success) {
+        console.log('📧 Email sent successfully:', result.messageId);
+        return true;
+      } else {
+        throw new Error(result.error || 'Email sending failed');
+      }
     } catch (error) {
       console.error('❌ Failed to send email:', error);
       return false;
@@ -272,7 +298,7 @@ class EmailService {
 
   async sendOrderNotificationToAdmin(orderData: OrderEmailData): Promise<boolean> {
     try {
-      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'vedhatrendz@gmail.com';
+      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@vedhatrendz.com';
       
       return await this.sendEmailToBackend({
         to: adminEmail,
@@ -364,7 +390,7 @@ ${orderData.shippingAddress.country}
 - Your order will be delivered within 5-7 business days
 - Payment will be collected upon delivery (COD)
 
-Questions? Contact us at vedhatrendz@gmail.com
+Questions? Contact us at support@vedhatrendz.com
 
 Thank you for choosing VedhaTrendz!
 Where tradition meets elegance
