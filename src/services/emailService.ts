@@ -27,37 +27,15 @@ class EmailService {
   private readonly emailServerUrl: string;
 
   constructor() {
-    // Use environment variable for email server URL, fallback to Vercel API
-    const envUrl = import.meta.env.VITE_EMAIL_SERVER_URL;
-    const isProd = import.meta.env.PROD;
-    const isDev = import.meta.env.DEV;
-    
-    // Determine the email server URL
-    if (envUrl) {
-      this.emailServerUrl = envUrl;
-    } else if (isProd || window.location.origin.includes('vercel.app')) {
-      // If in production or on Vercel, use the current origin + /api
-      this.emailServerUrl = `${window.location.origin}/api`;
-    } else {
-      // Development fallback
-      this.emailServerUrl = 'http://localhost:3001';
-    }
-    
-    // Debug logging
-    console.log('🔧 Email Service Configuration:', {
-      VITE_EMAIL_SERVER_URL: envUrl,
-      isProd,
-      isDev,
-      origin: window.location.origin,
-      finalEmailServerUrl: this.emailServerUrl
-    });
+    // Use environment variable for email server URL, fallback to localhost
+    this.emailServerUrl = import.meta.env.VITE_EMAIL_SERVER_URL || 'http://localhost:3001';
   }
 
   private formatPrice(price: number): string {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-    }).format(price); // Remove division by 100 since prices are already in rupees
+    }).format(price / 100);
   }
 
   private generateOrderEmailHTML(orderData: OrderEmailData): string {
@@ -270,22 +248,7 @@ class EmailService {
     text?: string;
   }): Promise<boolean> {
     try {
-      // Ensure the URL always has /api prefix for Vercel deployment
-      let emailUrl = `${this.emailServerUrl}/send-email`;
-      
-      // Fix URL if it doesn't contain /api (for Vercel deployment)
-      if (emailUrl.includes('vercel.app') && !emailUrl.includes('/api/')) {
-        emailUrl = emailUrl.replace('/send-email', '/api/send-email');
-      }
-      
-      console.log('📤 Sending email to backend:', {
-        originalUrl: `${this.emailServerUrl}/send-email`,
-        correctedUrl: emailUrl,
-        to: emailData.to,
-        subject: emailData.subject
-      });
-
-      const response = await fetch(emailUrl, {
+      const response = await fetch(`${this.emailServerUrl}/api/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -293,20 +256,13 @@ class EmailService {
         body: JSON.stringify(emailData)
       });
 
-      console.log('📥 Backend response:', {
-        ok: response.ok,
-        status: response.status,
-        statusText: response.statusText
-      });
-
       if (!response.ok) {
         const error = await response.json();
-        console.error('❌ Backend error response:', error);
         throw new Error(error.error || `HTTP ${response.status}`);
       }
 
       const result = await response.json();
-      console.log('✅ Email sent successfully:', result.messageId);
+      console.log('📧 Email sent successfully:', result.messageId);
       return true;
     } catch (error) {
       console.error('❌ Failed to send email:', error);
@@ -318,24 +274,14 @@ class EmailService {
     try {
       const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@vedhatrendz.com';
       
-      console.log('🔧 Admin email service config:', {
-        adminEmail,
-        emailServerUrl: this.emailServerUrl,
-        orderNumber: orderData.orderNumber,
-        customerName: orderData.customerName
-      });
-
-      const emailSent = await this.sendEmailToBackend({
+      return await this.sendEmailToBackend({
         to: adminEmail,
-        subject: `🛒 New Order #${orderData.orderNumber} - ${orderData.customerName} (${this.formatPrice(orderData.totalAmount)})`,
+        subject: `🛒 New Order #${orderData.orderNumber} - ${orderData.customerName} (₹${this.formatPrice(orderData.totalAmount).replace('₹', '')})`,
         html: this.generateOrderEmailHTML(orderData),
         text: this.generateOrderEmailText(orderData)
       });
-
-      console.log('📧 Admin email result:', emailSent);
-      return emailSent;
     } catch (error) {
-      console.error('❌ Failed to send admin notification email:', error);
+      console.error('Failed to send admin notification email:', error);
       return false;
     }
   }
@@ -427,24 +373,10 @@ Where tradition meets elegance
 
   async testEmailConnection(): Promise<boolean> {
     try {
-      // Ensure the URL always has /api prefix for Vercel deployment
-      let healthUrl = `${this.emailServerUrl}/health`;
-      
-      // Fix URL if it doesn't contain /api (for Vercel deployment)
-      if (healthUrl.includes('vercel.app') && !healthUrl.includes('/api/')) {
-        healthUrl = healthUrl.replace('/health', '/api/health');
-      }
-      
-      console.log('🔗 Testing email connection to:', {
-        originalUrl: `${this.emailServerUrl}/health`,
-        correctedUrl: healthUrl
-      });
-      
-      const response = await fetch(healthUrl);
-      console.log('🔗 Email connection test result:', response.ok, response.status);
+      const response = await fetch(`${this.emailServerUrl}/api/health`);
       return response.ok;
     } catch (error) {
-      console.error('❌ Email service not available:', error);
+      console.error('Email service not available:', error);
       return false;
     }
   }

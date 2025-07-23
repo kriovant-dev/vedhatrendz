@@ -9,14 +9,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import ImageUpload from '@/components/ImageUpload';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CategoryManager from '@/components/CategoryManager';
+import MultiImageUpload from '@/components/MultiImageUpload';
 import { ImageKitService, ImageUploadResult } from '@/services/imagekitService';
+import { CategoryService } from '@/services/categoryService';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Package } from 'lucide-react';
 
 interface Product {
   id: string;
   name: string;
+  product_code: string; // Unique product code for search
   description: string | null;
   price: number;
   original_price: number | null;
@@ -38,6 +42,7 @@ interface Product {
 
 interface ProductFormData {
   name: string;
+  product_code: string;
   description: string;
   price: string;
   original_price: string;
@@ -60,6 +65,7 @@ interface ProductEditData extends Omit<Product, 'images' | 'image_file_ids'> {
 // Type for creating new products - only required fields
 interface CreateProductData {
   name: string;
+  product_code: string;
   category: string;
   price: number;
   description?: string | null;
@@ -80,6 +86,7 @@ const ProductManager = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
+    product_code: '',
     description: '',
     price: '',
     original_price: '',
@@ -96,6 +103,9 @@ const ProductManager = () => {
 
   const [uploadedImages, setUploadedImages] = useState<ImageUploadResult[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const queryClient = useQueryClient();
 
@@ -113,6 +123,63 @@ const ProductManager = () => {
       return data as Product[];
     },
   });
+
+  // Filter products based on search query
+  const filteredProducts = products.filter(product => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(query) ||
+      product.product_code?.toLowerCase().includes(query) ||
+      product.category.toLowerCase().includes(query) ||
+      product.fabric?.toLowerCase().includes(query) ||
+      product.colors.some(color => color.toLowerCase().includes(query))
+    );
+  });
+
+  // Fetch dynamic categories
+  const { data: dynamicCategories = [] } = useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: CategoryService.getCategories,
+  });
+
+  // Generate category options for form
+  const categoryOptions = dynamicCategories.length > 0 
+    ? dynamicCategories.map(cat => ({ value: cat.slug, label: cat.name }))
+    : CategoryService.getDefaultCategories();
+
+  // Quick add category function
+  const handleQuickAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error('Please enter a category name');
+      return;
+    }
+
+    try {
+      const slug = CategoryService.generateSlug(newCategoryName);
+      const categoryData = {
+        name: newCategoryName,
+        slug,
+        is_active: true,
+        sort_order: categoryOptions.length,
+      };
+
+      await CategoryService.createCategory(categoryData);
+      
+      // Refresh categories
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      
+      // Set the new category as selected
+      setFormData({ ...formData, category: slug });
+      setNewCategoryName('');
+      
+      toast.success(`Category "${newCategoryName}" created successfully!`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create category');
+      console.error('Quick add category error:', error);
+    }
+  };
 
   // Create product mutation
   const createProductMutation = useMutation({
@@ -212,6 +279,7 @@ const ProductManager = () => {
   const resetForm = () => {
     setFormData({
       name: '',
+      product_code: '',
       description: '',
       price: '',
       original_price: '',
@@ -232,6 +300,7 @@ const ProductManager = () => {
     setEditingProduct(product);
     setFormData({
       name: product.name,
+      product_code: product.product_code || '',
       description: product.description || '',
       price: (product.price / 100).toString(),
       original_price: product.original_price ? (product.original_price / 100).toString() : '',
@@ -272,6 +341,7 @@ const ProductManager = () => {
     try {
       const productData: CreateProductData = {
         name: formData.name,
+        product_code: formData.product_code,
         category: formData.category,
         price: Math.round(parseFloat(formData.price) * 100),
         description: formData.description || null,
@@ -281,7 +351,7 @@ const ProductManager = () => {
         colors: formData.colors.split(',').map(c => c.trim()).filter(c => c),
         sizes: formData.sizes.split(',').map(s => s.trim()).filter(s => s),
         images: finalImages,
-        image_file_ids: uploadedImages.map(img => img.fileId), // Store ImageKit file IDs
+        image_file_ids: uploadedImages.map(img => img.fileId || ''), // Store ImageKit file IDs
         stock_quantity: parseInt(formData.stock_quantity) || 0,
         is_new: formData.is_new,
         is_bestseller: formData.is_bestseller,
@@ -344,19 +414,72 @@ const ProductManager = () => {
                   />
                 </div>
                 <div>
+                  <label className="text-sm font-medium">Product Code *</label>
+                  <Input
+                    value={formData.product_code}
+                    onChange={(e) => setFormData({ ...formData, product_code: e.target.value.toUpperCase() })}
+                    placeholder="e.g., VT-SAR-001"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Unique code for easy search</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="text-sm font-medium">Category *</label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sarees">Sarees</SelectItem>
-                      <SelectItem value="silk-sarees">Silk Sarees</SelectItem>
-                      <SelectItem value="cotton-sarees">Cotton Sarees</SelectItem>
-                      <SelectItem value="designer-sarees">Designer Sarees</SelectItem>
-                      <SelectItem value="wedding-sarees">Wedding Sarees</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="__add_new__" className="text-primary font-medium border-t">
+                          + Add New Category
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {formData.category === '__add_new__' && (
+                    <div className="mt-2 p-3 border rounded-lg bg-muted/50">
+                      <Input
+                        placeholder="Enter new category name"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleQuickAddCategory();
+                          }
+                        }}
+                      />
+                      <div className="flex gap-2 mt-2">
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          onClick={handleQuickAddCategory}
+                          disabled={!newCategoryName.trim()}
+                        >
+                          Add Category
+                        </Button>
+                        <Button 
+                          type="button" 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setFormData({ ...formData, category: '' });
+                            setNewCategoryName('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -431,7 +554,7 @@ const ProductManager = () => {
 
               <div>
                 <label className="text-sm font-medium">Product Images</label>
-                <ImageUpload
+                <MultiImageUpload
                   onImagesUploaded={setUploadedImages}
                   existingImages={uploadedImages}
                   maxImages={5}
@@ -496,10 +619,20 @@ const ProductManager = () => {
       {/* Products Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Products ({products.length})
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Products ({filteredProducts.length}{products.length !== filteredProducts.length ? ` of ${products.length}` : ''})
+            </CardTitle>
+            <div className="w-80">
+              <Input
+                placeholder="Search by name, code, category, fabric, or color..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -507,6 +640,7 @@ const ProductManager = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
+                  <TableHead>Code</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Stock</TableHead>
@@ -515,7 +649,7 @@ const ProductManager = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -539,6 +673,9 @@ const ProductManager = () => {
                           </div>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-mono text-sm font-medium">{product.product_code || 'N/A'}</div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{product.category}</Badge>

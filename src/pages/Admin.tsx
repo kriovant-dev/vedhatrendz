@@ -11,9 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Search, Filter, Package, Eye, Edit, Calendar, DollarSign, TrendingUp, Users, LogOut, ShoppingBag, ArrowLeft, Home } from 'lucide-react';
+import { Search, Filter, Package, Eye, Edit, Calendar, DollarSign, TrendingUp, Users, LogOut, ShoppingBag, ArrowLeft, Home, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { CategoryService } from '@/services/categoryService';
 import AdminLogin from '@/components/AdminLogin';
 import ProductManager from '@/components/ProductManager';
 
@@ -132,6 +133,22 @@ const Admin = () => {
     },
   });
 
+  // Cleanup empty categories mutation
+  const cleanupCategoriesMutation = useMutation({
+    mutationFn: CategoryService.deleteEmptyCategories,
+    onSuccess: (result) => {
+      if (result.deletedCount > 0) {
+        toast.success(`🗑️ Deleted ${result.deletedCount} empty categories: ${result.deletedCategories.join(', ')}`);
+      } else {
+        toast.info('✅ No empty categories found to delete');
+      }
+    },
+    onError: (error) => {
+      toast.error('❌ Failed to cleanup empty categories');
+      console.error('Cleanup error:', error);
+    },
+  });
+
   // Filter orders
   const filteredOrders = (orders || []).filter(order => {
     if (!order) return false;
@@ -219,13 +236,13 @@ const Admin = () => {
         const provider = selectedOrder.shipping_provider;
         
         // Create the WhatsApp message
-        const message = `Hi ${customerName}!
+        const message = `Hi ${customerName}! 📦
 
 Your order #${orderId} has been shipped via *${provider}*.
 
-Track your package: *${trackingNumber}*
+🚚 Track your package: *${trackingNumber}*
 
-Thank you for choosing VedhaTrendz! `;
+Thank you for choosing Rang-e-Saree Haven! ✨`;
 
         // Format phone number (remove any non-digits and ensure it starts with country code)
         let phoneNumber = selectedOrder.customer_phone.replace(/\D/g, '');
@@ -265,7 +282,24 @@ Thank you for choosing VedhaTrendz! `;
   }
 
   if (!isAuthenticated) {
-    return <AdminLogin onLoginSuccess={login} />;
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="admin-mobile-container max-w-md mx-auto">
+          {/* Back Button */}
+          <div className="mb-6">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-2 mobile-button"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="mobile-small-text">Back to Home</span>
+            </Button>
+          </div>
+          <AdminLogin onLoginSuccess={login} />
+        </div>
+      </div>
+    );
   }
 
   if (isLoading) {
@@ -281,110 +315,131 @@ Thank you for choosing VedhaTrendz! `;
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="admin-mobile-container max-w-7xl mx-auto">
         {/* Header with logout */}
-        <div className="mb-8 flex justify-between items-center">
+        <div className="admin-mobile-header">
           <div className="flex items-center gap-4">
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate('/')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 mobile-button"
             >
               <Home className="h-4 w-4" />
-              Home
+              <span className="hidden xs:inline">Home</span>
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Admin Dashboard</h1>
-              <p className="text-muted-foreground">Manage orders, products, and monitor your ecommerce store</p>
+              <h1 className="mobile-heading">Admin Dashboard</h1>
+              <p className="mobile-text text-muted-foreground">Manage orders, products, and monitor your ecommerce store</p>
             </div>
           </div>
-          <Button variant="outline" onClick={logout} className="flex items-center gap-2">
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
+          <div className="flex flex-col xs:flex-row gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => cleanupCategoriesMutation.mutate()}
+              disabled={cleanupCategoriesMutation.isPending}
+              className="text-orange-600 hover:text-orange-700 border-orange-200 hover:border-orange-300 mobile-button"
+            >
+              {cleanupCategoriesMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
+                  <span className="mobile-small-text">Cleaning...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  <span className="hidden xs:inline mobile-small-text">Cleanup Empty Categories</span>
+                  <span className="xs:hidden mobile-small-text">Cleanup</span>
+                </>
+              )}
+            </Button>
+            <Button variant="outline" onClick={logout} className="flex items-center gap-2 mobile-button">
+              <LogOut className="h-4 w-4" />
+              <span className="mobile-small-text">Logout</span>
+            </Button>
+          </div>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="admin-stats-grid">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+              <CardTitle className="mobile-small-text font-medium">Total Orders</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalOrders}</div>
+              <div className="mobile-text font-bold">{stats.totalOrders}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="mobile-small-text font-medium">Total Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>
+              <div className="mobile-text font-bold">{formatCurrency(stats.totalRevenue)}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Products</CardTitle>
+              <CardTitle className="mobile-small-text font-medium">Products</CardTitle>
               <ShoppingBag className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalProducts}</div>
+              <div className="mobile-text font-bold">{stats.totalProducts}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+              <CardTitle className="mobile-small-text font-medium">Pending Orders</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingOrders}</div>
+              <div className="mobile-text font-bold">{stats.pendingOrders}</div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
+              <CardTitle className="mobile-small-text font-medium">Completed Orders</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.completedOrders}</div>
+              <div className="mobile-text font-bold">{stats.completedOrders}</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="orders">Order Management</TabsTrigger>
-            <TabsTrigger value="products">Product Management</TabsTrigger>
+        <Tabs defaultValue="orders" className="admin-mobile-tabs space-y-6">
+          <TabsList className="admin-mobile-tab-list">
+            <TabsTrigger value="orders" className="mobile-button">Order Management</TabsTrigger>
+            <TabsTrigger value="products" className="mobile-button">Product Management</TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="space-y-6">
             {/* Filters */}
             <Card>
               <CardHeader>
-                <CardTitle>Order Management</CardTitle>
+                <CardTitle className="mobile-text">Order Management</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-col sm:flex-row gap-4">
+              <CardContent className="admin-mobile-card">
+                <div className="admin-mobile-filters">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search orders by email, name, or order ID..."
+                      placeholder="Search orders..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="admin-mobile-input pl-10"
                     />
                   </div>
                   
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-48">
+                    <SelectTrigger className="admin-mobile-select">
                       <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -400,7 +455,7 @@ Thank you for choosing VedhaTrendz! `;
                   </Select>
 
                   <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                    <SelectTrigger className="w-full sm:w-48">
+                    <SelectTrigger className="admin-mobile-select">
                       <SelectValue placeholder="Filter by payment" />
                     </SelectTrigger>
                     <SelectContent>
@@ -418,56 +473,65 @@ Thank you for choosing VedhaTrendz! `;
             {/* Orders Table */}
             <Card>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <Table>
+                <div className="admin-table-container">
+                  <Table className="admin-mobile-table">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Payment</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="admin-table-cell">Order ID</TableHead>
+                        <TableHead className="admin-table-cell">Customer</TableHead>
+                        <TableHead className="admin-table-cell">Items</TableHead>
+                        <TableHead className="admin-table-cell">Total</TableHead>
+                        <TableHead className="admin-table-cell">Status</TableHead>
+                        <TableHead className="admin-table-cell">Payment</TableHead>
+                        <TableHead className="admin-table-cell">Date</TableHead>
+                        <TableHead className="admin-table-cell-action">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredOrders.map((order) => (
                         <TableRow key={order.id}>
-                          <TableCell className="font-mono text-sm">
-                            #{order.id.slice(0, 8)}
+                          <TableCell className="admin-table-cell">
+                            <span className="font-mono mobile-small-text">
+                              #{order.id.slice(0, 8)}
+                            </span>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="admin-table-cell">
                             <div>
-                              <div className="font-medium">{order.customer_name || 'N/A'}</div>
-                              <div className="text-sm text-muted-foreground">{order.customer_email || 'N/A'}</div>
+                              <div className="font-medium mobile-small-text">{order.customer_name || 'N/A'}</div>
+                              <div className="mobile-small-text text-muted-foreground truncate max-w-[120px]">{order.customer_email || 'N/A'}</div>
                             </div>
                           </TableCell>
-                          <TableCell>
-                            {order.order_items?.length || 0} item{(order.order_items?.length || 0) !== 1 ? 's' : ''}
+                          <TableCell className="admin-table-cell">
+                            <span className="mobile-small-text">
+                              {order.order_items?.length || 0} item{(order.order_items?.length || 0) !== 1 ? 's' : ''}
+                            </span>
                           </TableCell>
-                          <TableCell className="font-medium">
-                            {formatCurrency(order.total_amount)}
+                          <TableCell className="admin-table-cell">
+                            <span className="font-medium mobile-small-text">
+                              {formatCurrency(order.total_amount)}
+                            </span>
                           </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(order.status)}>
+                          <TableCell className="admin-table-cell">
+                            <Badge className={`${getStatusColor(order.status)} text-xs`}>
                               {order.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <Badge className={getPaymentStatusColor(order.payment_status)}>
+                          <TableCell className="admin-table-cell">
+                            <Badge className={`${getPaymentStatusColor(order.payment_status)} text-xs`}>
                               {order.payment_status}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            {format(new Date(order.created_at), 'MMM dd, yyyy')}
+                          <TableCell className="admin-table-cell">
+                            <span className="mobile-small-text">
+                              {format(new Date(order.created_at), 'MMM dd, yyyy')}
+                            </span>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="admin-table-cell-action">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleViewOrder(order)}
+                              className="admin-action-button"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -488,85 +552,85 @@ Thank you for choosing VedhaTrendz! `;
 
         {/* Order Detail Sheet */}
         <Sheet open={isOrderSheetOpen} onOpenChange={setIsOrderSheetOpen}>
-          <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetContent className="admin-sheet-mobile admin-sheet-content">
             <SheetHeader>
-              <SheetTitle>Order Details</SheetTitle>
+              <SheetTitle className="mobile-text">Order Details</SheetTitle>
             </SheetHeader>
             
             {selectedOrder && (
               <div className="space-y-6 mt-6">
                 {/* Order Info */}
                 <div>
-                  <h3 className="font-semibold mb-3">Order Information</h3>
-                  <div className="space-y-2 text-sm">
+                  <h3 className="font-semibold mb-3 mobile-text">Order Information</h3>
+                  <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Order ID:</span>
-                      <span className="font-mono">#{selectedOrder.id?.slice(0, 8) || 'N/A'}</span>
+                      <span className="text-muted-foreground mobile-small-text">Order ID:</span>
+                      <span className="font-mono mobile-small-text">#{selectedOrder.id?.slice(0, 8) || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Date:</span>
-                      <span>{selectedOrder.created_at ? format(new Date(selectedOrder.created_at), 'MMM dd, yyyy HH:mm') : 'N/A'}</span>
+                      <span className="text-muted-foreground mobile-small-text">Date:</span>
+                      <span className="mobile-small-text">{selectedOrder.created_at ? format(new Date(selectedOrder.created_at), 'MMM dd, yyyy HH:mm') : 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total:</span>
-                      <span className="font-medium">{formatCurrency(selectedOrder.total_amount)}</span>
+                      <span className="text-muted-foreground mobile-small-text">Total:</span>
+                      <span className="font-medium mobile-small-text">{formatCurrency(selectedOrder.total_amount)}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Customer Info */}
                 <div>
-                  <h3 className="font-semibold mb-3">Customer Information</h3>
-                  <div className="space-y-2 text-sm">
+                  <h3 className="font-semibold mb-3 mobile-text">Customer Information</h3>
+                  <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Name:</span>
-                      <span>{selectedOrder.customer_name || 'N/A'}</span>
+                      <span className="text-muted-foreground mobile-small-text">Name:</span>
+                      <span className="mobile-small-text">{selectedOrder.customer_name || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Email:</span>
-                      <span>{selectedOrder.customer_email || 'N/A'}</span>
+                      <span className="text-muted-foreground mobile-small-text">Email:</span>
+                      <span className="mobile-small-text break-all">{selectedOrder.customer_email || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Phone:</span>
-                      <span>{selectedOrder.customer_phone || 'N/A'}</span>
+                      <span className="text-muted-foreground mobile-small-text">Phone:</span>
+                      <span className="mobile-small-text">{selectedOrder.customer_phone || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Current Shipping Info */}
                 <div>
-                  <h3 className="font-semibold mb-3">Current Shipping Info</h3>
-                  <div className="space-y-2 text-sm">
+                  <h3 className="font-semibold mb-3 mobile-text">Current Shipping Info</h3>
+                  <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Provider:</span>
-                      <span>{selectedOrder.shipping_provider || 'Not assigned'}</span>
+                      <span className="text-muted-foreground mobile-small-text">Provider:</span>
+                      <span className="mobile-small-text">{selectedOrder.shipping_provider || 'Not assigned'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Tracking:</span>
-                      <span className="font-mono">{selectedOrder.tracking_number || 'Not provided'}</span>
+                      <span className="text-muted-foreground mobile-small-text">Tracking:</span>
+                      <span className="font-mono mobile-small-text break-all">{selectedOrder.tracking_number || 'Not provided'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Shipping Address */}
                 <div>
-                  <h3 className="font-semibold mb-3">Shipping Address</h3>
-                  <div className="text-sm">
+                  <h3 className="font-semibold mb-3 mobile-text">Shipping Address</h3>
+                  <div className="mobile-small-text">
                     <p className="whitespace-pre-wrap">{formatShippingAddress(selectedOrder.shipping_address)}</p>
                   </div>
                 </div>
 
                 {/* Status Updates */}
                 <div>
-                  <h3 className="font-semibold mb-3">Update Status</h3>
+                  <h3 className="font-semibold mb-3 mobile-text">Update Status</h3>
                   <div className="space-y-3">
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Order Status</label>
+                      <label className="mobile-small-text font-medium mb-1 block">Order Status</label>
                       <Select
                         value={selectedOrder.status}
                         onValueChange={(value) => handleUpdateOrder({ status: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="admin-mobile-select">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -582,12 +646,12 @@ Thank you for choosing VedhaTrendz! `;
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Payment Status</label>
+                      <label className="mobile-small-text font-medium mb-1 block">Payment Status</label>
                       <Select
                         value={selectedOrder.payment_status}
                         onValueChange={(value) => handleUpdateOrder({ payment_status: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="admin-mobile-select">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -601,12 +665,12 @@ Thank you for choosing VedhaTrendz! `;
 
                     <div className="space-y-3">
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Shipping Provider</label>
+                        <label className="mobile-small-text font-medium mb-1 block">Shipping Provider</label>
                         <Select
                           value={selectedOrder.shipping_provider || ''}
                           onValueChange={(value) => setSelectedOrder({ ...selectedOrder, shipping_provider: value })}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="admin-mobile-select">
                             <SelectValue placeholder="Select shipping provider" />
                           </SelectTrigger>
                           <SelectContent>
@@ -625,21 +689,22 @@ Thank you for choosing VedhaTrendz! `;
                       </div>
                       
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Tracking Number</label>
+                        <label className="mobile-small-text font-medium mb-1 block">Tracking Number</label>
                         <Input
                           value={selectedOrder.tracking_number || ''}
                           onChange={(e) => setSelectedOrder({ ...selectedOrder, tracking_number: e.target.value })}
                           placeholder="Enter tracking number"
+                          className="admin-mobile-input"
                         />
                       </div>
                       
                       <Button
                         size="sm"
-                        className="w-full"
+                        className="w-full mobile-button"
                         onClick={() => handleUpdateTracking()}
                         disabled={!selectedOrder.tracking_number || !selectedOrder.shipping_provider}
                       >
-                        Update Tracking & Send WhatsApp
+                        <span className="mobile-small-text">Update Tracking & Send WhatsApp</span>
                       </Button>
                     </div>
                   </div>
@@ -647,15 +712,15 @@ Thank you for choosing VedhaTrendz! `;
 
                 {/* Order Items */}
                 <div>
-                  <h3 className="font-semibold mb-3">Order Items</h3>
+                  <h3 className="font-semibold mb-3 mobile-text">Order Items</h3>
                   <div className="space-y-3">
                     {(selectedOrder.order_items || []).map((item: any, index: number) => (
-                      <div key={index} className="border rounded-lg p-3">
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-sm text-muted-foreground">
+                      <div key={index} className="admin-order-item-mobile">
+                        <div className="font-medium mobile-small-text">{item.name}</div>
+                        <div className="mobile-small-text text-muted-foreground">
                           Color: {item.color} | Size: {item.size} | Qty: {item.quantity}
                         </div>
-                        <div className="font-medium">{formatCurrency(item.price * item.quantity)}</div>
+                        <div className="font-medium mobile-small-text">{formatCurrency(item.price * item.quantity)}</div>
                       </div>
                     ))}
                   </div>
@@ -663,8 +728,8 @@ Thank you for choosing VedhaTrendz! `;
 
                 {/* Shipping Address */}
                 <div>
-                  <h3 className="font-semibold mb-3">Shipping Address</h3>
-                  <div className="text-sm space-y-1">
+                  <h3 className="font-semibold mb-3 mobile-text">Shipping Address</h3>
+                  <div className="mobile-small-text space-y-1">
                     <div>{selectedOrder.shipping_address.street}</div>
                     <div>{selectedOrder.shipping_address.city}, {selectedOrder.shipping_address.state}</div>
                     <div>{selectedOrder.shipping_address.pincode}</div>

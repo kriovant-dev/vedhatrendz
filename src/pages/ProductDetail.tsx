@@ -13,6 +13,7 @@ import { Heart, ShoppingBag, Star, ArrowLeft, Share2, Truck, Shield, RotateCcw }
 import { firebase } from '@/integrations/firebase/client';
 import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 
 interface Product {
   id: string;
@@ -37,6 +38,7 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedSize, setSelectedSize] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -136,6 +138,79 @@ const ProductDetail = () => {
     toast.success('Proceeding to checkout...');
   };
 
+  const handleWishlistToggle = () => {
+    if (!product) return;
+    
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+      toast.success('Removed from wishlist!');
+    } else {
+      addToWishlist({
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        originalPrice: product.original_price,
+        image: product.images?.[0] || '',
+        category: product.category,
+        colors: product.colors || [],
+        sizes: product.sizes || []
+      });
+      toast.success('Added to wishlist!');
+    }
+  };
+
+  const handleShare = async () => {
+    if (!product) return;
+    
+    const shareData = {
+      title: product.name,
+      text: `Check out this beautiful ${product.category}: ${product.name}`,
+      url: window.location.href
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        toast.success('Shared successfully!');
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error sharing:', error);
+          fallbackShare();
+        }
+      }
+    } else {
+      fallbackShare();
+    }
+  };
+
+  const fallbackShare = () => {
+    if (!product) return;
+    
+    const shareUrl = window.location.href;
+    const shareText = `Check out this beautiful ${product.category}: ${product.name} - ${window.location.href}`;
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareText).then(() => {
+        toast.success('Product link copied to clipboard!');
+      }).catch(() => {
+        toast.error('Failed to copy link');
+      });
+    } else {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = shareText;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast.success('Product link copied to clipboard!');
+      } catch (err) {
+        toast.error('Failed to copy link');
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -188,9 +263,9 @@ const ProductDetail = () => {
           <span className="text-foreground">{product.name}</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
           {/* Product Images */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="aspect-[3/4] rounded-lg overflow-hidden bg-muted">
               {product.images && product.images.length > 0 ? (
                 <img
@@ -201,20 +276,20 @@ const ProductDetail = () => {
               ) : (
                 <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
                   <div className="text-center text-primary-foreground">
-                    <div className="mb-2 text-6xl">👗</div>
-                    <div className="text-lg font-medium">{product.category}</div>
+                    <div className="mb-2 text-4xl sm:text-6xl">👗</div>
+                    <div className="text-sm sm:text-lg font-medium">{product.category}</div>
                   </div>
                 </div>
               )}
             </div>
             
             {product.images && product.images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
+              <div className="flex gap-2 overflow-x-auto pb-2">
                 {product.images.map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 ${
+                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden border-2 ${
                       currentImageIndex === index ? 'border-primary' : 'border-border'
                     }`}
                   >
@@ -230,10 +305,10 @@ const ProductDetail = () => {
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Header */}
             <div>
-              <div className="flex items-start justify-between mb-2">
+              <div className="flex items-start justify-between mb-3 sm:mb-4">
                 <div className="flex gap-2">
                   {product.is_new && (
                     <Badge className="bg-saree-saffron text-primary-foreground">New</Badge>
@@ -243,36 +318,46 @@ const ProductDetail = () => {
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <Button size="icon" variant="outline">
-                    <Heart className="h-4 w-4" />
+                  <Button 
+                    size="icon" 
+                    variant="outline"
+                    className={`mobile-icon-button ${isInWishlist(product.id) ? 'bg-red-50 text-red-600 border-red-200' : ''}`}
+                    onClick={handleWishlistToggle}
+                  >
+                    <Heart className={`h-3 w-3 sm:h-4 sm:w-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
                   </Button>
-                  <Button size="icon" variant="outline">
-                    <Share2 className="h-4 w-4" />
+                  <Button 
+                    size="icon" 
+                    variant="outline"
+                    className="mobile-icon-button"
+                    onClick={handleShare}
+                  >
+                    <Share2 className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </div>
               
-              <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2">{product.name}</h1>
               
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
                 <div className="flex items-center gap-1">
-                  <Star className="h-5 w-5 fill-saree-gold text-saree-gold" />
-                  <span className="font-medium">{product.rating}</span>
-                  <span className="text-muted-foreground">({product.reviews_count} reviews)</span>
+                  <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-saree-gold text-saree-gold" />
+                  <span className="font-medium mobile-text">{product.rating}</span>
+                  <span className="text-muted-foreground mobile-small-text">({product.reviews_count} reviews)</span>
                 </div>
                 <Badge variant="outline">{product.category}</Badge>
               </div>
 
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-3xl font-bold text-primary">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <span className="text-2xl sm:text-3xl font-bold text-primary">
                   {formatPrice(product.price)}
                 </span>
                 {product.original_price && product.original_price > product.price && (
                   <>
-                    <span className="text-xl text-muted-foreground line-through">
+                    <span className="text-lg sm:text-xl text-muted-foreground line-through">
                       {formatPrice(product.original_price)}
                     </span>
-                    <Badge className="bg-green-100 text-green-800">
+                    <Badge className="bg-green-100 text-green-800 w-fit">
                       {discountPercentage}% OFF
                     </Badge>
                   </>

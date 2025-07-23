@@ -1,12 +1,16 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Award, Users, Truck, Shield, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Heart, Award, Users, Truck, Shield, Star, ArrowLeft } from 'lucide-react';
 
 const About = () => {
+  const navigate = useNavigate();
+  
   const values = [
     {
       icon: Heart,
@@ -40,6 +44,18 @@ const About = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      
+      {/* Back Button */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate(-1)}
+          className="flex items-center space-x-2 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back</span>
+        </Button>
+      </div>
       
       {/* Hero Section */}
       <section className="relative py-16 bg-gradient-to-br from-saree-rose/10 to-saree-marigold/10">

@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Link } from 'react-router-dom';
 import { 
   Facebook, 
   Instagram, 
@@ -20,34 +21,33 @@ import {
 const Footer = () => {
   const footerSections = [
     {
-      title: "Help",
+      title: "Legal & Policies",
       links: [
-        { label: "Terms of Service", href: "/terms" },
+        { label: "Terms & Conditions", href: "/terms" },
         { label: "Privacy Policy", href: "/privacy" },
         { label: "Shipping Policy", href: "/shipping-policy" },
         { label: "Refund Policy", href: "/refund-policy" },
-        { label: "Reset Password", href: "/reset-password" }
+        { label: "Size Guide", href: "/size-guide" }
       ]
     },
     {
-      title: "Discover",
+      title: "Shop & Discover",
       links: [
-        { label: "Shop", href: "/sarees" },
-        { label: "My Orders", href: "/orders" },
-        { label: "My Account", href: "/profile" },
-        { label: "About Us", href: "/about" },
-        { label: "Admin Panel", href: "/admin" }
+        { label: "All Sarees", href: "/sarees" },
+        { label: "Cotton Sarees", href: "/cotton-sarees" },
+        { label: "Silk Sarees", href: "/silk-sarees" },
+        { label: "Wedding Collection", href: "/wedding-sarees" },
+        { label: "New Arrivals", href: "/new-arrivals" }
       ]
     },
     {
-      title: "Customer Care",
+      title: "Customer Support",
       links: [
-        { label: "Size Guide", href: "/size-guide" },
-        { label: "Care Instructions", href: "/care" },
-        { label: "Shipping Info", href: "/shipping" },
-        { label: "Returns & Exchange", href: "/returns" },
-        { label: "Track Order", href: "/track" },
-        { label: "FAQ", href: "/faq" }
+        { label: "Contact Us", href: "/contact" },
+        { label: "FAQ", href: "/faq" },
+        { label: "Care Instructions", href: "/care-instructions" },
+        { label: "Track Your Order", href: "/orders" },
+        { label: "About Us", href: "/about" }
       ]
     }
   ];
@@ -94,7 +94,15 @@ const Footer = () => {
                 </Button>
               </div>
               <p className="text-xs text-primary-foreground/60">
-                By subscribing, you agree to our Privacy Policy and Terms of Service.
+                By subscribing, you agree to our{' '}
+                <Link to="/privacy" className="text-saree-gold hover:underline">
+                  Privacy Policy
+                </Link>
+                {' '}and{' '}
+                <Link to="/terms" className="text-saree-gold hover:underline">
+                  Terms & Conditions
+                </Link>
+                .
               </p>
             </div>
           </div>
@@ -166,12 +174,12 @@ const Footer = () => {
               <ul className="space-y-3">
                 {section.links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
+                    <Link
+                      to={link.href}
                       className="text-sm text-primary-foreground/80 hover:text-saree-gold transition-smooth"
                     >
                       {link.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

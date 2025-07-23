@@ -10,10 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { ShoppingBag, MapPin, User, Phone, CreditCard, Check } from 'lucide-react';
 import { useCart, CartItem } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
-import ClerkAuthComponent from './ClerkAuthComponent';
+import EmailAuth from './EmailAuth';
 import { toast } from 'sonner';
-import { firebase } from '@/integrations/firebase/client';
-import { useUser } from '@clerk/clerk-react';
+import { FirebaseClient } from '@/integrations/firebase/client';
 import { emailService } from '@/services/emailService';
 
 interface CheckoutProps {
@@ -34,6 +33,7 @@ interface CheckoutProps {
 interface ShippingDetails {
   fullName: string;
   email: string;
+  phone: string;
   address: string;
   city: string;
   state: string;
@@ -44,8 +44,7 @@ interface ShippingDetails {
 const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
   const { items, getTotalPrice, clearCart } = useCart();
   const { user, isSignedIn } = useAuth();
-  const { user: clerkUser } = useUser();
-  const [showClerkAuth, setShowClerkAuth] = useState(false);
+  const [showEmailAuth, setShowEmailAuth] = useState(false);
   const [step, setStep] = useState<'auth' | 'details' | 'payment' | 'confirmation'>('auth');
   const [loading, setLoading] = useState(false);
 
@@ -63,6 +62,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
   const [shippingDetails, setShippingDetails] = useState<ShippingDetails>({
     fullName: '',
     email: '',
+    phone: '',
     address: '',
     city: '',
     state: '',
@@ -85,48 +85,46 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
   };
 
   const totalPrice = getCheckoutTotal();
-  const shippingFee = 5000; // ₹50 shipping
-  const taxAmount = Math.round(totalPrice * 0.18); // 18% GST
+  const shippingFee = 5000; // ₹50 shipping (5000 paise = ₹50)
+  const taxAmount = Math.round(totalPrice * 0.18); // 18% GST (already in paise)
   const finalTotal = totalPrice + shippingFee + taxAmount;
 
   // Function to save user profile for future autofill
   const saveUserProfile = async () => {
-    if (!clerkUser) return;
+    if (!user) return;
 
     try {
       const profileData = {
-        user_id: clerkUser.id,
-        full_name: shippingDetails.fullName,
+        user_id: user.uid,
+        user_phone: shippingDetails.phone,
+        user_email: user.email || '',
+        name: shippingDetails.fullName,
         email: shippingDetails.email,
-        address: shippingDetails.address,
-        city: shippingDetails.city,
-        state: shippingDetails.state,
-        pincode: shippingDetails.pincode,
+        phone: shippingDetails.phone,
+        address: {
+          street: shippingDetails.address,
+          city: shippingDetails.city,
+          state: shippingDetails.state,
+          pincode: shippingDetails.pincode
+        },
         landmark: shippingDetails.landmark || '',
-        phone: clerkUser.primaryPhoneNumber?.phoneNumber || '',
         updated_at: new Date().toISOString()
       };
 
       // Check if profile exists
-      const { data: existingProfile } = await firebase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', clerkUser.id)
-        .execute();
+      const { data: existingProfile } = await FirebaseClient.getSingle('user_profiles', [
+        { field: 'user_id', operator: '==', value: user.uid }
+      ]);
 
-      if (existingProfile && existingProfile.length > 0) {
+      if (existingProfile) {
         // Update existing profile
-        await firebase
-          .from('user_profiles')
-          .update(profileData)
-          .eq('user_id', clerkUser.id)
-          .execute();
+        await FirebaseClient.update('user_profiles', existingProfile.id, profileData);
       } else {
         // Create new profile
-        await firebase
-          .from('user_profiles')
-          .insert({ ...profileData, created_at: new Date().toISOString() })
-          .execute();
+        await FirebaseClient.add('user_profiles', {
+          ...profileData,
+          created_at: new Date().toISOString()
+        });
       }
       
       console.log('User profile saved successfully');
@@ -138,52 +136,59 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
 
   // Function to load user profile for autofill
   const loadUserProfile = async () => {
-    if (!clerkUser) return;
+    if (!user) return;
 
     try {
-      const { data: profile } = await firebase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', clerkUser.id)
-        .execute();
+      const { data: profile } = await FirebaseClient.getSingle('user_profiles', [
+        { field: 'user_id', operator: '==', value: user.uid }
+      ]);
 
-      if (profile && profile.length > 0) {
-        const userProfile = profile[0];
+      if (profile) {
         setShippingDetails(prev => ({
           ...prev,
-          fullName: userProfile.full_name || `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || '',
-          email: userProfile.email || clerkUser.primaryEmailAddress?.emailAddress || '',
-          address: userProfile.address || '',
-          city: userProfile.city || '',
-          state: userProfile.state || '',
-          pincode: userProfile.pincode || '',
-          landmark: userProfile.landmark || ''
+          fullName: profile.name || user.displayName || '',
+          email: profile.email || user.email || '',
+          phone: profile.phone || '',
+          address: profile.address?.street || '',
+          city: profile.address?.city || '',
+          state: profile.address?.state || '',
+          pincode: profile.address?.pincode || '',
+          landmark: profile.landmark || ''
         }));
         toast.success('Address details loaded from your profile');
       } else {
-        // Set basic user info from Clerk if no profile exists
+        // Set basic user info from Firebase if no profile exists
         setShippingDetails(prev => ({
           ...prev,
-          fullName: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || '',
-          email: clerkUser.primaryEmailAddress?.emailAddress || ''
+          fullName: user.displayName || '',
+          email: user.email || '',
+          phone: ''
         }));
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
-      // Fallback to basic user info from Clerk
+      // Fallback to basic user info from Firebase
       setShippingDetails(prev => ({
         ...prev,
-        fullName: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || '',
-        email: clerkUser.primaryEmailAddress?.emailAddress || ''
+        fullName: user.displayName || '',
+        email: user.email || '',
+        phone: ''
       }));
     }
   };
 
   const handleShippingSubmit = () => {
-    const { fullName, email, address, city, state, pincode } = shippingDetails;
+    const { fullName, email, phone, address, city, state, pincode } = shippingDetails;
     
-    if (!fullName || !email || !address || !city || !state || !pincode) {
+    if (!fullName || !email || !phone || !address || !city || !state || !pincode) {
       toast.error('Please fill in all required shipping details');
+      return;
+    }
+
+    // Validate phone number (basic validation)
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      toast.error('Please enter a valid 10-digit phone number');
       return;
     }
 
@@ -201,7 +206,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
   };
 
   const handlePlaceOrder = async () => {
-    if (!clerkUser) {
+    if (!user) {
       toast.error('Please sign in to place an order');
       return;
     }
@@ -214,9 +219,12 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
 
       // Create order in Firebase with proper structure matching the database
       const orderData = {
-        customer_name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || shippingDetails.fullName || 'Customer',
-        customer_email: shippingDetails.email || clerkUser.primaryEmailAddress?.emailAddress || '',
-        customer_phone: clerkUser.primaryPhoneNumber?.phoneNumber || '',
+        customer_name: user.displayName || shippingDetails.fullName || 'Customer',
+        customer_email: shippingDetails.email || user.email || '',
+        customer_phone: shippingDetails.phone,
+        user_phone: shippingDetails.phone, // Add this field for OrderService compatibility
+        user_email: user.email || '', // Add user_email for OrderService compatibility
+        user_id: user.uid, // Add user_id for better tracking
         order_items: checkoutItems.map(item => ({
           id: item.productId,
           name: item.name,
@@ -225,7 +233,17 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           size: item.size,
           quantity: item.quantity
         })),
+        items: checkoutItems.map(item => ({ // Add items field for OrderService compatibility
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          color: item.color,
+          size: item.size,
+          quantity: item.quantity
+        })),
         shipping_address: {
+          name: shippingDetails.fullName,
+          phone: shippingDetails.phone,
           street: shippingDetails.address,
           city: shippingDetails.city,
           state: shippingDetails.state,
@@ -236,6 +254,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         shipping_cost: shippingFee,
         tax_amount: taxAmount,
         total_amount: finalTotal,
+        total: finalTotal, // Add total field for OrderService compatibility
         payment_method: 'cod',
         payment_status: 'pending',
         status: 'pending',
@@ -247,13 +266,10 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
       };
 
       // Insert order into Firebase
-      const result = await firebase
-        .from('orders')
-        .insert(orderData)
-        .execute();
+      const result = await FirebaseClient.add('orders', orderData);
 
-      if (result.error) {
-        throw result.error;
+      if (!result.data) {
+        throw new Error('Failed to create order');
       }
 
       // Generate order number for email
@@ -272,40 +288,28 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           shippingAddress: orderData.shipping_address
         };
 
-        console.log('📧 Email service URL:', emailService);
-        console.log('📧 Email data prepared:', emailData);
-
-        // Test email service connection first
-        const isEmailServiceAvailable = await emailService.testEmailConnection();
-        console.log('🔗 Email service available:', isEmailServiceAvailable);
-
-        if (!isEmailServiceAvailable) {
-          console.warn('⚠️ Email service not available, skipping email notifications');
-          toast.success('Order placed successfully!');
+        // Send admin notification email
+        console.log('📧 Sending admin notification email...');
+        const adminEmailSent = await emailService.sendOrderNotificationToAdmin(emailData);
+        if (adminEmailSent) {
+          console.log('✅ Admin notification email sent successfully');
         } else {
-          // Send admin notification email
-          console.log('📧 Sending admin notification email...');
-          const adminEmailSent = await emailService.sendOrderNotificationToAdmin(emailData);
-          if (adminEmailSent) {
-            console.log('✅ Admin notification email sent successfully');
-          } else {
-            console.error('❌ Admin notification email failed');
-          }
+          console.log('⚠️ Admin notification email failed');
+        }
 
-          // Send customer confirmation email
-          if (orderData.customer_email) {
-            console.log('📧 Sending customer confirmation email...');
-            const customerEmailSent = await emailService.sendOrderConfirmationToCustomer(emailData);
-            if (customerEmailSent) {
-              console.log('✅ Customer confirmation email sent successfully');
-              toast.success('Order placed! Check your email for confirmation.');
-            } else {
-              console.error('❌ Customer confirmation email failed');
-              toast.success('Order placed successfully!');
-            }
+        // Send customer confirmation email
+        if (orderData.customer_email) {
+          console.log('📧 Sending customer confirmation email...');
+          const customerEmailSent = await emailService.sendOrderConfirmationToCustomer(emailData);
+          if (customerEmailSent) {
+            console.log('✅ Customer confirmation email sent successfully');
+            toast.success('Order placed! Check your email for confirmation.');
           } else {
+            console.log('⚠️ Customer confirmation email failed');
             toast.success('Order placed successfully!');
           }
+        } else {
+          toast.success('Order placed successfully!');
         }
       } catch (emailError) {
         console.error('Email sending failed:', emailError);
@@ -332,6 +336,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
     setShippingDetails({
       fullName: '',
       email: '',
+      phone: '',
       address: '',
       city: '',
       state: '',
@@ -376,12 +381,12 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         </CardContent>
       </Card>
 
-      {isSignedIn && clerkUser ? (
+      {isSignedIn && user ? (
         <div className="space-y-4">
           <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
             <Check className="h-4 w-4 text-green-600" />
             <span className="text-sm text-green-800">
-              Verified: {clerkUser.primaryPhoneNumber?.phoneNumber || clerkUser.primaryEmailAddress?.emailAddress || 'User'}
+              Verified: {user.email || user.phoneNumber || 'User'}
             </span>
           </div>
           <Button onClick={() => setStep('details')} className="w-full">
@@ -389,8 +394,8 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           </Button>
         </div>
       ) : (
-        <Button onClick={() => setShowClerkAuth(true)} className="w-full">
-          <Phone className="mr-2 h-4 w-4" />
+        <Button onClick={() => setShowEmailAuth(true)} className="w-full">
+          <User className="mr-2 h-4 w-4" />
           Sign In to Continue
         </Button>
       )}
@@ -424,6 +429,18 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
               value={shippingDetails.email}
               onChange={(e) => setShippingDetails(prev => ({ ...prev, email: e.target.value }))}
               placeholder="Enter your email address"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="phone">Phone Number *</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={shippingDetails.phone}
+              onChange={(e) => setShippingDetails(prev => ({ ...prev, phone: e.target.value }))}
+              placeholder="Enter your 10-digit phone number"
+              maxLength={10}
             />
           </div>
 
@@ -646,10 +663,10 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         </DialogContent>
       </Dialog>
 
-      <ClerkAuthComponent
-        isOpen={showClerkAuth}
-        onClose={() => setShowClerkAuth(false)}
-        mode="signin"
+      <EmailAuth
+        isOpen={showEmailAuth}
+        onClose={() => setShowEmailAuth(false)}
+        onSuccess={() => setShowEmailAuth(false)}
       />
     </>
   );

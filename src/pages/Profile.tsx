@@ -7,11 +7,13 @@ import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
-import { User, Phone, Mail, MapPin, Package, Heart, ShoppingCart, Edit2, Save, X } from 'lucide-react';
+import { User, Phone, Mail, MapPin, Package, Heart, ShoppingCart, Edit2, Save, X, ArrowLeft } from 'lucide-react';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
 import { FirebaseClient } from '../integrations/firebase/client';
-import { Link } from 'react-router-dom';
+import { OrderService } from '../services/orderService';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface UserProfile {
   name: string;
@@ -37,8 +39,9 @@ interface Order {
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
-  const { getTotalItems: getWishlistCount } = useWishlist();
-  const { getTotalItems: getCartCount } = useCart();
+  const navigate = useNavigate();
+  const { getTotalItems: getWishlistCount, items: wishlistItems, removeFromWishlist } = useWishlist();
+  const { getTotalItems: getCartCount, addToCart } = useCart();
   
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
@@ -55,6 +58,7 @@ const Profile: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -73,15 +77,76 @@ const Profile: React.FC = () => {
       if (data) {
         setProfile(data);
       } else {
-        // Create default profile with phone number
-        setProfile(prev => ({
-          ...prev,
-          phone: user?.phoneNumber || ''
-        }));
+        // Create default profile with phone number and try to auto-fill from orders
+        const defaultProfile = {
+          name: '',
+          email: '',
+          phone: user?.phoneNumber || '',
+          address: {
+            street: '',
+            city: '',
+            state: '',
+            pincode: ''
+          }
+        };
+
+        // Try to auto-fill profile from latest order data
+        const phoneNumber = user?.phoneNumber;
+        if (phoneNumber) {
+          try {
+            const { data: orderData } = await FirebaseClient.getWhere('orders', [
+              { field: 'user_phone', operator: '==', value: phoneNumber }
+            ]);
+            
+            if (orderData && orderData.length > 0) {
+              // Get the most recent order with shipping address
+              const ordersWithAddress = orderData.filter(order => order.shipping_address);
+              if (ordersWithAddress.length > 0) {
+                // Sort by created_at to get the most recent
+                const sortedOrders = ordersWithAddress.sort((a, b) => 
+                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+                const latestOrder = sortedOrders[0];
+                
+                if (latestOrder.shipping_address) {
+                  defaultProfile.name = latestOrder.shipping_address.name || '';
+                  defaultProfile.email = latestOrder.shipping_address.email || '';
+                  defaultProfile.address = {
+                    street: latestOrder.shipping_address.street || '',
+                    city: latestOrder.shipping_address.city || '',
+                    state: latestOrder.shipping_address.state || '',
+                    pincode: latestOrder.shipping_address.pincode || ''
+                  };
+                  
+                  // Auto-save the profile with order data
+                  const profileData = {
+                    ...defaultProfile,
+                    user_id: user?.uid,
+                    user_phone: user?.phoneNumber,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    auto_filled_from_order: true
+                  };
+                  
+                  try {
+                    await FirebaseClient.add('user_profiles', profileData);
+                    console.log('Profile auto-filled from order history');
+                  } catch (error) {
+                    console.error('Error auto-saving profile:', error);
+                  }
+                }
+              }
+            }
+          } catch (orderError) {
+            console.error('Error fetching orders for auto-fill:', orderError);
+          }
+        }
+        
+        setProfile(defaultProfile);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
-      // Set phone number from auth user
+      // Set phone number from auth user as fallback
       setProfile(prev => ({
         ...prev,
         phone: user?.phoneNumber || ''
@@ -126,9 +191,66 @@ const Profile: React.FC = () => {
         });
       }
 
+      // Also update future orders with this address as default shipping address
+      await updateFutureOrdersWithProfile();
+
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving profile:', error);
+    }
+  };
+
+  const updateFutureOrdersWithProfile = async () => {
+    try {
+      // This is for future orders - we won't modify existing orders
+      // but we can set this as default for checkout
+      console.log('Profile saved - will be used as default for future orders');
+    } catch (error) {
+      console.error('Error updating future orders:', error);
+    }
+  };
+
+  const autoFillFromOrders = async () => {
+    setIsAutoFilling(true);
+    try {
+      const phoneNumber = user?.phoneNumber;
+      if (!phoneNumber) return;
+
+      const { data: orderData } = await FirebaseClient.getWhere('orders', [
+        { field: 'user_phone', operator: '==', value: phoneNumber }
+      ]);
+      
+      if (orderData && orderData.length > 0) {
+        // Get the most recent order with shipping address
+        const ordersWithAddress = orderData.filter(order => order.shipping_address);
+        if (ordersWithAddress.length > 0) {
+          // Sort by created_at to get the most recent
+          const sortedOrders = ordersWithAddress.sort((a, b) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+          const latestOrder = sortedOrders[0];
+          
+          if (latestOrder.shipping_address) {
+            setProfile(prev => ({
+              ...prev,
+              name: latestOrder.shipping_address.name || prev.name,
+              email: latestOrder.shipping_address.email || prev.email,
+              address: {
+                street: latestOrder.shipping_address.street || prev.address.street,
+                city: latestOrder.shipping_address.city || prev.address.city,
+                state: latestOrder.shipping_address.state || prev.address.state,
+                pincode: latestOrder.shipping_address.pincode || prev.address.pincode
+              }
+            }));
+            
+            console.log('Profile auto-filled from latest order');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error auto-filling from orders:', error);
+    } finally {
+      setIsAutoFilling(false);
     }
   };
 
@@ -180,6 +302,18 @@ const Profile: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8 min-h-screen">
       <div className="max-w-4xl mx-auto">
+        {/* Back Button */}
+        <div className="mb-6">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(-1)}
+            className="flex items-center space-x-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back</span>
+          </Button>
+        </div>
+        
         {/* Profile Header */}
         <div className="bg-gradient-to-r from-saree-primary to-saree-accent text-white rounded-lg p-6 mb-8">
           <div className="flex items-center justify-between">
@@ -242,9 +376,10 @@ const Profile: React.FC = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">Profile Information</TabsTrigger>
             <TabsTrigger value="orders">Order History</TabsTrigger>
+            <TabsTrigger value="wishlist">My Wishlist</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
@@ -255,26 +390,63 @@ const Profile: React.FC = () => {
                     <CardTitle>Profile Information</CardTitle>
                     <CardDescription>Manage your personal information and address</CardDescription>
                   </div>
-                  {!isEditing ? (
-                    <Button variant="outline" onClick={() => setIsEditing(true)}>
-                      <Edit2 className="w-4 h-4 mr-2" />
-                      Edit
+                  <div className="flex gap-2">
+                    {/* Auto-fill button */}
+                    <Button 
+                      variant="outline" 
+                      onClick={autoFillFromOrders}
+                      disabled={isAutoFilling || orders.length === 0}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      {isAutoFilling ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                          Auto-filling...
+                        </>
+                      ) : (
+                        <>
+                          <Package className="w-4 h-4 mr-2" />
+                          Fill from Orders
+                        </>
+                      )}
                     </Button>
-                  ) : (
-                    <div className="space-x-2">
-                      <Button variant="outline" onClick={() => setIsEditing(false)}>
-                        <X className="w-4 h-4 mr-2" />
-                        Cancel
+                    
+                    {!isEditing ? (
+                      <Button variant="outline" onClick={() => setIsEditing(true)}>
+                        <Edit2 className="w-4 h-4 mr-2" />
+                        Edit
                       </Button>
-                      <Button onClick={saveProfile}>
-                        <Save className="w-4 h-4 mr-2" />
-                        Save
-                      </Button>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="space-x-2">
+                        <Button variant="outline" onClick={() => setIsEditing(false)}>
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </Button>
+                        <Button onClick={saveProfile}>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Auto-fill Notice */}
+                {orders.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-2">
+                      <Package className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-800">Auto-fill Available</h4>
+                        <p className="text-sm text-blue-700">
+                          We found {orders.length} order(s) with shipping details. Click "Fill from Orders" to automatically populate your profile with your latest shipping address.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Personal Information */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Personal Information</h3>
@@ -409,7 +581,7 @@ const Profile: React.FC = () => {
                               <Badge className={getOrderStatusColor(order.status)}>
                                 {order.status}
                               </Badge>
-                              <p className="text-lg font-bold mt-1">₹{order.total.toLocaleString()}</p>
+                              <p className="text-lg font-bold mt-1">{OrderService.formatPrice(order.total)}</p>
                             </div>
                           </div>
                           
@@ -421,6 +593,91 @@ const Profile: React.FC = () => {
                                 {order.shipping_address.city}, {order.shipping_address.state}
                               </p>
                             )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="wishlist">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Heart className="w-5 h-5 mr-2 text-red-500" />
+                  My Wishlist ({getWishlistCount()} items)
+                </CardTitle>
+                <CardDescription>Items you've saved for later</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {getWishlistCount() === 0 ? (
+                  <div className="text-center py-8">
+                    <Heart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">Your wishlist is empty</h3>
+                    <p className="text-gray-500 mb-4">Save items you love to view them later</p>
+                    <Link to="/sarees">
+                      <Button>
+                        Start Shopping
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {wishlistItems.map((item) => (
+                      <Card key={item.id} className="group hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="aspect-square relative mb-3 overflow-hidden rounded-lg">
+                            <img 
+                              src={item.image} 
+                              alt={item.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                          </div>
+                          <h3 className="font-semibold text-sm mb-2 line-clamp-2">{item.name}</h3>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-bold">₹{(item.price / 100).toLocaleString()}</span>
+                              {item.originalPrice && item.originalPrice > item.price && (
+                                <span className="text-sm text-gray-500 line-through">
+                                  ₹{(item.originalPrice / 100).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="text-xs">{item.category}</Badge>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => {
+                                addToCart({
+                                  productId: item.productId,
+                                  name: item.name,
+                                  price: item.price,
+                                  color: item.colors[0] || '',
+                                  size: 'Free Size',
+                                  quantity: 1,
+                                  image: item.image
+                                });
+                                toast.success('Added to cart!');
+                              }}
+                            >
+                              <ShoppingCart className="w-4 h-4 mr-1" />
+                              Add to Cart
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                removeFromWishlist(item.productId);
+                                toast.success('Removed from wishlist!');
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, ShoppingBag, Star, Eye } from 'lucide-react';
 import { firebase } from '@/integrations/firebase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { ImageKitService } from '@/services/imagekitService';
 import { toast } from 'sonner';
 
@@ -28,6 +29,7 @@ interface Product {
 const FeaturedProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['featured-products'],
@@ -95,11 +97,25 @@ const FeaturedProducts = () => {
     toast.success(`${product.name} added to cart!`);
   };
 
-  const handleLike = (e: React.MouseEvent, productId: string) => {
+  const handleLike = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
-    // For now, just show a toast. In a real app, you'd save to user preferences/wishlist
-    toast.success('Added to wishlist!');
-    console.log('Liked product:', productId);
+    
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id);
+      toast.success('Removed from wishlist!');
+    } else {
+      addToWishlist({
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        originalPrice: product.original_price,
+        image: product.images?.[0] || '',
+        category: product.category,
+        colors: product.colors || [],
+        sizes: ['Free Size'] // Default since sizes aren't in the Product interface
+      });
+      toast.success('Added to wishlist!');
+    }
   };
 
   const handleQuickView = (e: React.MouseEvent, productId: string) => {
@@ -156,11 +172,11 @@ const FeaturedProducts = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="mobile-featured-grid">
           {products.map((product, index) => (
             <Card 
               key={product.id} 
-              className="group hover-lift transition-smooth border-border overflow-hidden cursor-pointer"
+              className="group mobile-card hover-lift transition-smooth border-border overflow-hidden cursor-pointer"
               style={{ animationDelay: `${index * 0.1}s` }}
               onClick={() => handleProductClick(product.id)}
             >
@@ -189,47 +205,47 @@ const FeaturedProducts = () => {
                   )}
 
                   {/* Badges */}
-                  <div className="absolute top-3 left-3 flex flex-col gap-2">
+                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 sm:gap-2">
                     {product.is_new && (
-                      <Badge className="bg-saree-saffron text-primary-foreground">
+                      <Badge className="bg-saree-saffron text-primary-foreground text-xs">
                         New
                       </Badge>
                     )}
                     {product.is_bestseller && (
-                      <Badge className="bg-saree-burgundy text-primary-foreground">
+                      <Badge className="bg-saree-burgundy text-primary-foreground text-xs">
                         Bestseller
                       </Badge>
                     )}
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-smooth">
+                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-1 sm:gap-2 opacity-0 group-hover:opacity-100 transition-smooth">
                     <Button 
                       size="icon" 
                       variant="secondary" 
-                      className="h-8 w-8 hover-glow"
-                      onClick={(e) => handleLike(e, product.id)}
+                      className={`h-7 w-7 sm:h-8 sm:w-8 hover-glow ${isInWishlist(product.id) ? 'bg-red-100 text-red-600' : ''}`}
+                      onClick={(e) => handleLike(e, product)}
                     >
-                      <Heart className="h-4 w-4" />
+                      <Heart className={`h-3 w-3 sm:h-4 sm:w-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
                     </Button>
                     <Button 
                       size="icon" 
                       variant="secondary" 
-                      className="h-8 w-8 hover-glow"
+                      className="h-7 w-7 sm:h-8 sm:w-8 hover-glow"
                       onClick={(e) => handleQuickView(e, product.id)}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
 
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-smooth">
-                    <div className="absolute bottom-4 left-4 right-4">
+                    <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4">
                       <Button 
-                        className="w-full gradient-primary text-primary-foreground hover:scale-105 transition-smooth"
+                        className="w-full gradient-primary text-primary-foreground hover:scale-105 transition-smooth text-xs sm:text-sm py-1.5 sm:py-2"
                         onClick={(e) => handleAddToCart(e, product)}
                       >
-                        <ShoppingBag className="mr-2 h-4 w-4" />
+                        <ShoppingBag className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                         Add to Cart
                       </Button>
                     </div>
@@ -237,37 +253,37 @@ const FeaturedProducts = () => {
                 </div>
 
                 {/* Product Info */}
-                <div className="p-4">
+                <div className="p-2 sm:p-4">
                   {/* Category */}
-                  <div className="mb-2">
+                  <div className="mb-1 sm:mb-2">
                     <Badge variant="outline" className="text-xs">
                       {product.category}
                     </Badge>
                   </div>
 
                   {/* Product Name */}
-                  <h3 className="font-medium text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-smooth">
+                  <h3 className="font-medium text-foreground mb-1 sm:mb-2 line-clamp-2 group-hover:text-primary transition-smooth text-sm sm:text-base">
                     {product.name}
                   </h3>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-1 mb-3">
-                    <Star className="h-4 w-4 fill-saree-gold text-saree-gold" />
-                    <span className="text-sm font-medium">{product.rating}</span>
+                  <div className="flex items-center gap-1 mb-2 sm:mb-3">
+                    <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-saree-gold text-saree-gold" />
+                    <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
                     <span className="text-xs text-muted-foreground">({product.reviews_count})</span>
                   </div>
 
-                  {/* Colors */}
+                  {/* Colors - Hide on very small screens to save space */}
                   {product.colors && product.colors.length > 0 && (
-                    <div className="flex gap-1 mb-3">
-                      {product.colors.slice(0, 4).map((color) => (
+                    <div className="hidden xs:flex gap-1 mb-2 sm:mb-3">
+                      {product.colors.slice(0, 3).map((color) => (
                         <div
                           key={color}
-                          className={`w-4 h-4 rounded-full border-2 border-white shadow-sm ${getColorClass(color)}`}
+                          className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-white shadow-sm ${getColorClass(color)}`}
                         />
                       ))}
-                      {product.colors.length > 4 && (
-                        <div className="w-4 h-4 rounded-full bg-muted border-2 border-white shadow-sm flex items-center justify-center">
+                      {product.colors.length > 3 && (
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-muted border-2 border-white shadow-sm flex items-center justify-center">
                           <span className="text-xs text-muted-foreground">+</span>
                         </div>
                       )}
@@ -275,12 +291,12 @@ const FeaturedProducts = () => {
                   )}
 
                   {/* Price */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-primary">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <span className="text-sm sm:text-lg font-bold text-primary">
                       {formatPrice(product.price)}
                     </span>
                     {product.original_price && product.original_price > product.price && (
-                      <span className="text-sm text-muted-foreground line-through">
+                      <span className="text-xs sm:text-sm text-muted-foreground line-through">
                         {formatPrice(product.original_price)}
                       </span>
                     )}

@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -7,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { MapPin, Phone, Mail, Clock, MessageCircle, Send } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, MessageCircle, Send, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Contact = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -90,6 +92,18 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      
+      {/* Back Button */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate(-1)}
+          className="flex items-center space-x-2 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back</span>
+        </Button>
+      </div>
       
       {/* Hero Section */}
       <section className="relative py-16 bg-gradient-to-br from-saree-rose/10 to-saree-marigold/10">

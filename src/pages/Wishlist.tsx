@@ -1,13 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Heart, ShoppingCart, Trash2 } from 'lucide-react';
+import { Heart, ShoppingCart, Trash2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Wishlist: React.FC = () => {
+  const navigate = useNavigate();
   const { items, removeFromWishlist, clearWishlist, getTotalItems } = useWishlist();
   const { addToCart } = useCart();
 
@@ -27,6 +29,18 @@ const Wishlist: React.FC = () => {
   if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8 min-h-screen">
+        {/* Back Button */}
+        <div className="mb-6">
+          <Button 
+            variant="outline" 
+            onClick={() => navigate(-1)}
+            className="flex items-center space-x-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back</span>
+          </Button>
+        </div>
+        
         <div className="text-center">
           <Heart className="mx-auto h-16 w-16 text-gray-300 mb-4" />
           <h1 className="text-3xl font-bold text-saree-primary mb-2">Your Wishlist</h1>
@@ -43,6 +57,18 @@ const Wishlist: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 min-h-screen">
+      {/* Back Button */}
+      <div className="mb-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate(-1)}
+          className="flex items-center space-x-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back</span>
+        </Button>
+      </div>
+      
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-saree-primary mb-2">My Wishlist</h1>

@@ -11,6 +11,7 @@ export interface ImageUploadResult {
 export class ImageKitService {
   private static readonly IMAGEKIT_URL_ENDPOINT = 'https://ik.imagekit.io';
   private static readonly IMAGEKIT_PUBLIC_KEY = import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || '';
+  private static readonly IMAGEKIT_PRIVATE_KEY = import.meta.env.VITE_IMAGEKIT_PRIVATE_KEY || '';
   private static readonly IMAGEKIT_URL_ENDPOINT_PREFIX = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || '';
 
   /**
@@ -125,33 +126,96 @@ export class ImageKitService {
   }
 
   /**
-   * Upload image to ImageKit (placeholder implementation)
-   * In a real implementation, this would use ImageKit's upload API
+   * Upload image to ImageKit
    */
   static async uploadImage(file: File, folder: string = 'products'): Promise<ImageUploadResult> {
-    // This is a placeholder implementation
-    // In production, you would integrate with ImageKit's upload API
-    const fileReader = new FileReader();
-    
-    return new Promise((resolve, reject) => {
-      fileReader.onload = () => {
-        const result = fileReader.result as string;
-        const uploadResult: ImageUploadResult = {
-          url: result,
-          thumbnailUrl: result,
-          fileId: `temp_${Date.now()}`,
-          name: file.name,
-          size: file.size
-        };
-        resolve(uploadResult);
-      };
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('fileName', file.name);
+      formData.append('folder', folder);
+      formData.append('useUniqueFileName', 'true');
+
+      const response = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(this.IMAGEKIT_PRIVATE_KEY + ':')}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
       
-      fileReader.onerror = () => {
-        reject(new Error('Failed to read file'));
+      return {
+        url: result.url,
+        thumbnailUrl: result.thumbnailUrl || result.url,
+        fileId: result.fileId,
+        name: result.name,
+        size: result.size
       };
-      
-      fileReader.readAsDataURL(file);
-    });
+    } catch (error) {
+      console.error('ImageKit upload error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete image from ImageKit
+   */
+  static async deleteImage(fileId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`https://api.imagekit.io/v1/files/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Basic ${btoa(this.IMAGEKIT_PRIVATE_KEY + ':')}`,
+        },
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('ImageKit delete error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete multiple images from ImageKit
+   */
+  static async deleteMultipleImages(fileIds: string[]): Promise<boolean[]> {
+    const results = await Promise.allSettled(
+      fileIds.map(fileId => this.deleteImage(fileId))
+    );
+
+    return results.map(result => 
+      result.status === 'fulfilled' ? result.value : false
+    );
+  }
+
+  /**
+   * Get image details from ImageKit
+   */
+  static async getImageDetails(fileId: string): Promise<any> {
+    try {
+      const response = await fetch(`https://api.imagekit.io/v1/files/${fileId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${btoa(this.IMAGEKIT_PRIVATE_KEY + ':')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get image details: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('ImageKit get details error:', error);
+      throw error;
+    }
   }
 }
 

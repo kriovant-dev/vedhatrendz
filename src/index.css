@@ -240,13 +240,26 @@ All colors MUST be HSL.
     transition: var(--transition-bounce);
   }
 
-  /* Hover effects */
+  /* Hover effects - Mobile optimized */
   .hover-lift {
-    @apply transition-smooth hover:scale-105 hover:shadow-elegant;
+    @apply transition-smooth;
+  }
+  
+  /* Only apply hover effects on devices that support hover */
+  @media (hover: hover) {
+    .hover-lift:hover {
+      @apply scale-105 shadow-elegant;
+    }
   }
 
   .hover-glow {
-    @apply transition-smooth hover:shadow-gold;
+    @apply transition-smooth;
+  }
+  
+  @media (hover: hover) {
+    .hover-glow:hover {
+      @apply shadow-gold;
+    }
   }
 
   /* Text utilities */
@@ -255,6 +268,63 @@ All colors MUST be HSL.
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Mobile-optimized product grid */
+  .mobile-product-grid {
+    @apply grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6;
+  }
+
+  .mobile-featured-grid {
+    @apply grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6;
+  }
+
+  /* Mobile-friendly card */
+  .mobile-card {
+    @apply overflow-hidden transition-all duration-200;
+  }
+
+  /* Mobile touch targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Mobile typography */
+  .mobile-heading {
+    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl;
+  }
+
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+
+  .mobile-small-text {
+    @apply text-xs sm:text-sm;
+  }
+
+  /* Mobile spacing */
+  .mobile-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .mobile-margin {
+    @apply mx-4 sm:mx-6 lg:mx-8;
+  }
+
+  /* Mobile buttons */
+  .mobile-button {
+    @apply px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base;
+  }
+
+  .mobile-icon-button {
+    @apply p-2 sm:p-2.5 touch-target;
   }
 
   /* Animation utilities */
@@ -272,4 +342,246 @@ All colors MUST be HSL.
       transform: translateY(0);
     }
   }
+
+  /* Mobile-specific optimizations */
+  @media (max-width: 640px) {
+    /* Reduce animation for better performance on mobile */
+    .hover-lift {
+      @apply active:scale-95;
+    }
+    
+    /* Better touch feedback */
+    .mobile-card:active {
+      @apply scale-95 bg-muted/20;
+    }
+    
+    /* Optimize fonts for mobile readability */
+    body {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    
+    /* Better scrolling on iOS */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Hide scrollbars on mobile for cleaner look */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+  }
+}
+
+/* Admin page mobile styles */
+.admin-mobile-container {
+  @apply px-2 py-4;
+}
+
+@media (min-width: 640px) {
+  .admin-mobile-container {
+    @apply px-4 py-6;
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-mobile-container {
+    @apply px-8 py-8;
+  }
+}
+
+/* Mobile-friendly admin header */
+.admin-mobile-header {
+  @apply flex flex-col gap-4 mb-6;
+}
+
+@media (min-width: 768px) {
+  .admin-mobile-header {
+    @apply flex-row justify-between items-center;
+  }
+}
+
+/* Mobile admin stats grid */
+.admin-stats-grid {
+  @apply grid grid-cols-1 gap-4 mb-6;
+}
+
+@media (min-width: 475px) {
+  .admin-stats-grid {
+    @apply grid-cols-2;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-stats-grid {
+    @apply grid-cols-3;
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-stats-grid {
+    @apply grid-cols-5;
+  }
+}
+
+/* Mobile admin filters */
+.admin-mobile-filters {
+  @apply flex flex-col gap-3;
+}
+
+@media (min-width: 640px) {
+  .admin-mobile-filters {
+    @apply flex-row gap-4;
+  }
+}
+
+/* Mobile admin table container with proper scrolling */
+.admin-table-container {
+  @apply w-full overflow-x-auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.admin-table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.admin-table-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.admin-table-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.admin-table-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Mobile admin table styles */
+.admin-mobile-table {
+  @apply min-w-full;
+  min-width: 800px;
+}
+
+@media (min-width: 1024px) {
+  .admin-mobile-table {
+    min-width: auto;
+  }
+}
+
+/* Mobile admin table cells */
+.admin-table-cell {
+  @apply px-2 py-3 text-xs;
+  min-width: 80px;
+}
+
+@media (min-width: 640px) {
+  .admin-table-cell {
+    @apply px-3 py-3 text-sm;
+    min-width: 100px;
+  }
+}
+
+.admin-table-cell-action {
+  @apply px-2 py-3 text-xs;
+  min-width: 60px;
+}
+
+@media (min-width: 640px) {
+  .admin-table-cell-action {
+    @apply px-3 py-3 text-sm;
+    min-width: 80px;
+  }
+}
+
+/* Mobile admin sheet content */
+.admin-sheet-mobile {
+  @apply w-full;
+  max-width: 100vw;
+}
+
+@media (min-width: 640px) {
+  .admin-sheet-mobile {
+    max-width: 32rem;
+  }
+}
+
+/* Mobile admin sheet scrollable content */
+.admin-sheet-content {
+  @apply overflow-y-auto;
+  max-height: calc(100vh - 120px);
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.admin-sheet-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-sheet-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.admin-sheet-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.admin-sheet-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Mobile admin tabs */
+.admin-mobile-tabs {
+  @apply w-full;
+}
+
+.admin-mobile-tab-list {
+  @apply grid grid-cols-2 w-full;
+}
+
+/* Mobile admin cards */
+.admin-mobile-card {
+  @apply p-4;
+}
+
+@media (max-width: 639px) {
+  .admin-mobile-card {
+    @apply p-3;
+  }
+}
+
+/* Mobile admin form elements */
+.admin-mobile-select {
+  @apply w-full min-h-[44px];
+}
+
+.admin-mobile-input {
+  @apply w-full min-h-[44px] px-3 py-2 text-base;
+}
+
+/* Mobile admin order items */
+.admin-order-item-mobile {
+  @apply border rounded-lg p-3 text-sm;
+}
+
+@media (max-width: 639px) {
+  .admin-order-item-mobile {
+    @apply p-2;
+  }
+}
+
+/* Mobile admin badge container */
+.admin-badge-container {
+  @apply flex flex-wrap gap-1;
+}
+
+/* Mobile admin action buttons */
+.admin-action-button {
+  @apply touch-target min-w-[44px] min-h-[44px] flex items-center justify-center;
 }

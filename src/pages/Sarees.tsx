@@ -9,9 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Search, Star, ShoppingBag } from 'lucide-react';
+import { Heart, Search, Star, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { firebase } from '@/integrations/firebase/client';
 import { useCart } from '@/contexts/CartContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { toast } from 'sonner';
 import { ImageKitService } from '@/services/imagekitService';
 
@@ -32,6 +33,7 @@ interface Product {
 const Sarees = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -44,20 +46,8 @@ const Sarees = () => {
     const searchParam = searchParams.get('search');
     
     if (categoryParam) {
-      // Map common category names to match the actual category values in your database
-      const categoryMap: { [key: string]: string } = {
-        'wedding sarees': 'Wedding',
-        'silk sarees': 'Silk',
-        'cotton sarees': 'Cotton',
-        'designer sarees': 'Designer',
-        'festive sarees': 'Festive',
-        'office wear': 'Office',
-        'party wear': 'Party',
-        'casual': 'Casual'
-      };
-      
-      const mappedCategory = categoryMap[categoryParam.toLowerCase()] || categoryParam;
-      setSelectedCategory(mappedCategory);
+      console.log('Category param from URL:', categoryParam);
+      setSelectedCategory(categoryParam);
     }
     
     if (searchParam) {
@@ -86,9 +76,27 @@ const Sarees = () => {
     },
   });
 
+  // Fetch categories for proper matching
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await firebase
+        .from('categories')
+        .select('*')
+        .execute();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Filter and sort products
   const filteredProducts = React.useMemo(() => {
     let filtered = allProducts;
+
+    console.log('All products:', allProducts.length);
+    console.log('Selected category:', selectedCategory);
+    console.log('Available categories:', categories);
 
     // Filter by search query
     if (searchQuery) {
@@ -101,8 +109,44 @@ const Sarees = () => {
 
     // Filter by category
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
+      // Find the category that matches either name or slug
+      const matchingCategory = categories.find(cat => 
+        cat.name === selectedCategory || 
+        cat.slug === selectedCategory ||
+        cat.name.toLowerCase() === selectedCategory.toLowerCase() ||
+        cat.slug?.toLowerCase() === selectedCategory.toLowerCase()
+      );
+
+      console.log('Matching category found:', matchingCategory);
+
+      if (matchingCategory) {
+        // Filter products that match either the category slug or name
+        filtered = filtered.filter(product => {
+          const matches = product.category === matchingCategory.slug || 
+                         product.category === matchingCategory.name ||
+                         product.category.toLowerCase() === matchingCategory.name.toLowerCase() ||
+                         product.category.toLowerCase() === matchingCategory.slug?.toLowerCase();
+          
+          if (matches) {
+            console.log('Product matches category:', product.name, 'category:', product.category);
+          }
+          return matches;
+        });
+      } else {
+        // Fallback: direct string matching
+        filtered = filtered.filter(product => {
+          const matches = product.category === selectedCategory ||
+                         product.category.toLowerCase() === selectedCategory.toLowerCase();
+          
+          if (matches) {
+            console.log('Product matches category (fallback):', product.name, 'category:', product.category);
+          }
+          return matches;
+        });
+      }
     }
+
+    console.log('Filtered products:', filtered.length);
 
     // Filter by price range
     if (priceRange !== 'all') {
@@ -136,7 +180,7 @@ const Sarees = () => {
     }
 
     return filtered;
-  }, [allProducts, searchQuery, selectedCategory, priceRange, sortBy]);
+  }, [allProducts, searchQuery, selectedCategory, priceRange, sortBy, categories]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -195,49 +239,63 @@ const Sarees = () => {
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button - only show if came from specific category or search */}
+        {(searchParams.get('category') || searchParams.get('search')) && (
+          <div className="mb-6">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate(-1)}
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
+            </Button>
+          </div>
+        )}
+        
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="font-display text-4xl font-bold gradient-primary bg-clip-text text-transparent mb-4">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="font-display mobile-heading font-bold gradient-primary bg-clip-text text-transparent mb-4">
             Saree Collection
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground mobile-text">
             Discover our exquisite collection of traditional and contemporary sarees
           </p>
         </div>
 
         {/* Filters */}
-        <div className="bg-card rounded-lg p-6 mb-8 shadow-soft">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card rounded-lg p-4 sm:p-6 mb-6 sm:mb-8 shadow-soft">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Search */}
-            <div className="relative">
+            <div className="relative sm:col-span-2 lg:col-span-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 type="search"
                 placeholder="Search sarees..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm sm:text-base"
               />
             </div>
 
             {/* Category Filter */}
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
+              <SelectTrigger className="text-sm sm:text-base">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="silk">Silk Sarees</SelectItem>
-                <SelectItem value="cotton">Cotton Sarees</SelectItem>
-                <SelectItem value="georgette">Georgette Sarees</SelectItem>
-                <SelectItem value="net">Net Sarees</SelectItem>
-                <SelectItem value="chiffon">Chiffon Sarees</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
             {/* Price Filter */}
             <Select value={priceRange} onValueChange={setPriceRange}>
-              <SelectTrigger>
+              <SelectTrigger className="text-sm sm:text-base">
                 <SelectValue placeholder="Price Range" />
               </SelectTrigger>
               <SelectContent>
@@ -251,7 +309,7 @@ const Sarees = () => {
 
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
+              <SelectTrigger className="text-sm sm:text-base">
                 <SelectValue placeholder="Sort By" />
               </SelectTrigger>
               <SelectContent>
@@ -266,18 +324,19 @@ const Sarees = () => {
         </div>
 
         {/* Results */}
-        <div className="mb-6">
-          <p className="text-muted-foreground">
+        <div className="mb-4 sm:mb-6">
+          <p className="text-muted-foreground mobile-text">
             Showing {filteredProducts.length} of {allProducts.length} sarees
           </p>
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-          {filteredProducts.map((product) => (
+        {filteredProducts.length > 0 ? (
+          <div className="mobile-product-grid mb-12">
+            {filteredProducts.map((product) => (
             <Card 
               key={product.id} 
-              className="group hover:shadow-elegant transition-all duration-300 overflow-hidden cursor-pointer"
+              className="group mobile-card hover:shadow-elegant transition-all duration-300 overflow-hidden cursor-pointer"
               onClick={() => handleProductClick(product.id)}
             >
               <div className="relative overflow-hidden">
@@ -290,65 +349,96 @@ const Sarees = () => {
                       format: 'webp'
                     })}
                     alt={product.name}
-                    className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="w-full h-48 sm:h-56 md:h-64 object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-full h-64 bg-gradient-primary flex items-center justify-center">
+                  <div className="w-full h-48 sm:h-56 md:h-64 bg-gradient-primary flex items-center justify-center">
                     <div className="text-center text-primary-foreground">
-                      <div className="mb-2 text-4xl">👗</div>
-                      <div className="text-sm font-medium">{product.category}</div>
+                      <div className="mb-2 text-2xl sm:text-4xl">👗</div>
+                      <div className="text-xs sm:text-sm font-medium">{product.category}</div>
                     </div>
                   </div>
                 )}
                 <Button
                   size="icon"
                   variant="secondary"
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className={`absolute top-2 right-2 h-7 w-7 sm:h-8 sm:w-8 opacity-0 group-hover:opacity-100 transition-opacity ${
+                    isInWishlist(product.id) ? 'bg-red-100 text-red-600' : ''
+                  }`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    console.log('Added to wishlist:', product.id);
+                    if (isInWishlist(product.id)) {
+                      removeFromWishlist(product.id);
+                      toast.success('Removed from wishlist!');
+                    } else {
+                      addToWishlist({
+                        productId: product.id,
+                        name: product.name,
+                        price: product.price,
+                        originalPrice: product.original_price,
+                        image: product.images?.[0] || '',
+                        category: product.category,
+                        colors: product.colors || [],
+                        sizes: ['Free Size']
+                      });
+                      toast.success('Added to wishlist!');
+                    }
                   }}
                 >
-                  <Heart className="h-4 w-4" />
+                  <Heart className={`h-3 w-3 sm:h-4 sm:w-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
                 </Button>
                 {product.original_price && product.original_price > product.price && (
-                  <Badge className="absolute top-2 left-2 bg-destructive">
+                  <Badge className="absolute top-2 left-2 bg-destructive text-xs">
                     {Math.round((1 - product.price / product.original_price) * 100)}% OFF
                   </Badge>
                 )}
               </div>
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
-                <p className="text-sm text-muted-foreground mb-2">{product.fabric}</p>
+              <CardContent className="p-2 sm:p-4">
+                <h3 className="font-semibold text-sm sm:text-lg mb-1 sm:mb-2 line-clamp-2">{product.name}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2 hidden sm:block">{product.fabric}</p>
                 <div className="flex items-center gap-1 mb-2">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">{product.rating || 0}</span>
-                  <span className="text-sm text-muted-foreground">({product.reviews_count || 0})</span>
+                  <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
+                  <span className="text-xs sm:text-sm font-medium">{product.rating || 0}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews_count || 0})</span>
                 </div>
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="font-bold text-lg">{formatPrice(product.price)}</span>
+                <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-4">
+                  <span className="font-bold text-sm sm:text-lg">{formatPrice(product.price)}</span>
                   {product.original_price && product.original_price > product.price && (
-                    <span className="text-sm text-muted-foreground line-through">
+                    <span className="text-xs sm:text-sm text-muted-foreground line-through">
                       {formatPrice(product.original_price)}
                     </span>
                   )}
                 </div>
                 <Button 
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm py-1.5 sm:py-2"
                   onClick={(e) => handleAddToCart(e, product)}
                 >
-                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Add to Cart
                 </Button>
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
+          </div>
+        ) : (
           <div className="text-center py-12">
+            <div className="text-6xl mb-4">📦</div>
             <h3 className="text-xl font-semibold mb-2">No sarees found</h3>
-            <p className="text-muted-foreground">Try adjusting your filters or search terms</p>
+            <p className="text-muted-foreground">
+              {selectedCategory !== 'all' 
+                ? `No products found in "${selectedCategory}" category. Try selecting a different category or adjusting your filters.`
+                : 'Try adjusting your filters or search terms'
+              }
+            </p>
+            {selectedCategory !== 'all' && (
+              <Button 
+                onClick={() => setSelectedCategory('all')} 
+                variant="outline" 
+                className="mt-4"
+              >
+                View All Categories
+              </Button>
+            )}
           </div>
         )}
       </div>
