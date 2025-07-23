@@ -52,6 +52,11 @@ After deployment, you can test the email API:
 curl https://your-domain.vercel.app/api/health
 ```
 
+### Simple Test (Environment Check)
+```bash
+curl https://your-domain.vercel.app/api/simple-test
+```
+
 ### Test Email (Replace with actual values)
 ```bash
 curl -X POST https://your-domain.vercel.app/api/send-email \
@@ -62,6 +67,26 @@ curl -X POST https://your-domain.vercel.app/api/send-email \
     "html": "<h1>Test Email</h1><p>This is a test email from VedhaTrendz.</p>"
   }'
 ```
+
+## Debugging 500 Errors
+
+If you're getting 500 errors, check these steps:
+
+1. **Check Environment Variables**: Visit `/api/health` to see which env vars are missing
+2. **Test Simple Function**: Visit `/api/simple-test` to test basic functionality
+3. **Check Vercel Function Logs**: Go to Vercel dashboard → Functions → View logs
+4. **Common Issues**:
+   - Missing `SMTP_USER` or `SMTP_PASS` environment variables
+   - Incorrect Gmail app password (should be 16 characters)
+   - Gmail account doesn't have 2FA enabled (required for app passwords)
+   - Network issues with Gmail SMTP
+
+### Gmail App Password Setup
+1. Enable 2-Factor Authentication on your Google account
+2. Go to Google Account → Security → 2-Step Verification → App passwords
+3. Generate a new app password for "Mail"
+4. Copy the 16-character password (no spaces)
+5. Set it as `SMTP_PASS` in Vercel environment variables
 
 ## Files Updated for Vercel
 

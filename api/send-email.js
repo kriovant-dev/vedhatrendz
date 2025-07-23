@@ -1,34 +1,8 @@
 const nodemailer = require('nodemailer');
 
-// Email transporter configuration
-const createTransporter = () => {
-  // Try OAuth2 first, fallback to app password
-  if (process.env.GMAIL_CLIENT_ID && process.env.GMAIL_CLIENT_SECRET && process.env.GMAIL_REFRESH_TOKEN) {
-    return nodemailer.createTransporter({
-      service: 'gmail',
-      auth: {
-        type: 'OAuth2',
-        user: process.env.SMTP_USER,
-        clientId: process.env.GMAIL_CLIENT_ID,
-        clientSecret: process.env.GMAIL_CLIENT_SECRET,
-        refreshToken: process.env.GMAIL_REFRESH_TOKEN
-      }
-    });
-  } else {
-    // Fallback to basic auth with app password
-    return nodemailer.createTransporter({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-  }
-};
-
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
+  console.log('📧 Email API called:', req.method, req.url);
+  
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -53,7 +27,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('📧 Processing email request...');
+    
+    // Check environment variables
+    if (!process.env.SMTP_USER) {
+      throw new Error('SMTP_USER environment variable is not set');
+    }
+    if (!process.env.SMTP_PASS && !process.env.GMAIL_REFRESH_TOKEN) {
+      throw new Error('Neither SMTP_PASS nor Gmail OAuth credentials are set');
+    }
+
     const { to, subject, html, text } = req.body;
+    console.log('📧 Email data received:', { to, subject: subject?.substring(0, 50) + '...' });
 
     if (!to || !subject || !html) {
       return res.status(400).json({
@@ -71,7 +56,18 @@ export default async function handler(req, res) {
       });
     }
 
-    const transporter = createTransporter();
+    console.log('📧 Creating transporter...');
+    
+    // Create transporter with basic auth (app password)
+    const transporter = nodemailer.createTransporter({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
     
     const mailOptions = {
       from: `"VedhaTrendz" <${process.env.SMTP_USER}>`,
@@ -81,6 +77,7 @@ export default async function handler(req, res) {
       text: text || ''
     };
 
+    console.log('📧 Sending email...');
     const result = await transporter.sendMail(mailOptions);
     
     console.log(`📧 Email sent successfully to ${to}:`, result.messageId);
@@ -92,9 +89,12 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('❌ Email sending failed:', error);
+    console.error('❌ Error stack:', error.stack);
+    
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to send email'
+      error: error.message || 'Failed to send email',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
-}
+};
