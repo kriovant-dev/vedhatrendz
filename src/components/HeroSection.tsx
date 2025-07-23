@@ -32,7 +32,7 @@ const HeroSection = () => {
           <div className="text-center lg:text-left animate-fade-up">
             <div className="mb-4 sm:mb-6">
               <span className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-saree-gold/10 text-saree-burgundy mobile-small-text sm:text-sm font-medium border border-saree-gold/20 animate-scale-in">
-                ✨ Premium Collection 2024
+                ✨ Premium Collection 2025
               </span>
             </div>
             
@@ -72,13 +72,13 @@ const HeroSection = () => {
                 <div className="mobile-small-text text-muted-foreground">Unique Designs</div>
               </div>
               <div className="text-center lg:text-left">
-                <div className="text-lg sm:text-2xl font-bold text-primary">10K+</div>
+                <div className="text-lg sm:text-2xl font-bold text-primary">1000+</div>
                 <div className="mobile-small-text text-muted-foreground">Happy Customers</div>
               </div>
-              <div className="text-center lg:text-left">
-                <div className="text-lg sm:text-2xl font-bold text-primary">15+</div>
+              {/* <div className="text-center lg:text-left">
+                <div className="text-lg sm:text-2xl font-bold text-primary">1+</div>
                 <div className="mobile-small-text text-muted-foreground">Years Legacy</div>
-              </div>
+              </div> */}
             </div>
           </div>
 

@@ -135,8 +135,8 @@ const Testimonials = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-primary">10,000+</div>
-              <div className="text-sm text-muted-foreground">Happy Customers</div>
+              <div className="text-3xl font-bold text-primary">22K+</div>
+              <div className="text-sm text-muted-foreground">Instagram Followers</div>
             </div>
 
             <div className="space-y-2">
@@ -145,8 +145,8 @@ const Testimonials = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-primary">1,500+</div>
-              <div className="text-sm text-muted-foreground">5-Star Reviews</div>
+              <div className="text-3xl font-bold text-primary">1000+</div>
+              <div className="text-sm text-muted-foreground">Happy Customers</div>
             </div>
           </div>
         </div>
@@ -162,7 +162,6 @@ const Testimonials = () => {
                 Experience the same quality and service that our customers love. Shop with confidence today!
               </p>
               <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-                <span>✓ 30-Day Return Policy</span>
                 <span>✓ Authentic Products</span>
                 <span>✓ Fast Shipping</span>
               </div>

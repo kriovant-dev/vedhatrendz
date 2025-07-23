@@ -51,17 +51,17 @@ const Contact = () => {
     {
       icon: MapPin,
       title: 'Visit Our Store',
-      details: ['Somewhere in the World', 'Gujarat 510000', 'India']
+      details: ['Visakhapatnam', 'Andhra Pradesh', 'India']
     },
     {
       icon: Phone,
       title: 'Call Us',
-      details: ['+91 XXXXX XXXXX', '+91 XXXXX XXXXX', 'Mon-Sat: 9AM-8PM']
+      details: ['+91 7702284509', '+91 7702284509', 'Mon-Sat: 9AM-8PM']
     },
     {
       icon: Mail,
       title: 'Email Us',
-      details: ['info@vedhatrendz.com', 'support@vedhatrendz.com', 'orders@vedhatrendz.com']
+      details: ['vedhatrendz@gmail.com']
     },
     {
       icon: Clock,
@@ -279,10 +279,10 @@ const Contact = () => {
           <div className="bg-muted/50 rounded-2xl p-8 text-center">
             <div className="max-w-md mx-auto">
               <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
-              <h3 className="font-semibold text-xl mb-2">VedhaTrendz Flagship Store</h3>
+              <h3 className="font-semibold text-xl mb-2">Visakhapatnam</h3>
               <p className="text-muted-foreground mb-4">
-                Somewhere in India<br />
-                Gujarat ,India 530001
+                Andhra Pradesh<br />
+                India.
               </p>
               <Badge variant="outline" className="mb-4">Open Today: 9:00 AM - 8:00 PM</Badge>
               <p className="text-sm text-muted-foreground">

@@ -196,8 +196,8 @@ const Privacy = () => {
               </ul>
               <p className="mobile-small-text text-muted-foreground mt-4">
                 To exercise these rights or for any privacy-related questions, please contact us at{' '}
-                <a href="mailto:privacy@vedhatrendz.com" className="text-primary hover:underline">
-                  privacy@vedhatrendz.com
+                <a href="mailto:vedhatrendz@gmail.com" className="text-primary hover:underline">
+                  vedhatrendz@gmail.com
                 </a>
               </p>
             </CardContent>
@@ -261,9 +261,9 @@ const Privacy = () => {
                 If you have any questions about this Privacy Policy or our data practices, please contact us:
               </p>
               <div className="space-y-2 mobile-small-text">
-                <div><strong>Email:</strong> privacy@vedhatrendz.com</div>
-                <div><strong>Phone:</strong> +91 XXXXX XXXXX</div>
-                <div><strong>Address:</strong> Somewhere in the world, Gujarat, India 530001</div>
+                <div><strong>Email:</strong> vedhatrendz@gmail.com</div>
+                <div><strong>Phone:</strong> +91 7702284509</div>
+                <div><strong>Address:</strong> Visakhapatnam, Andhra Pradesh, India</div>
               </div>
             </CardContent>
           </Card>
