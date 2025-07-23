@@ -266,11 +266,22 @@ class EmailService {
         
         // Try to get error details from response
         try {
-          const errorData = await response.json();
-          console.error('❌ Error details:', errorData);
+          const errorText = await response.text();
+          console.error('❌ Raw error response:', errorText);
+          
+          // Try to parse as JSON
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+            console.error('❌ Error details:', errorData);
+          } catch (parseError) {
+            console.error('❌ Response is not JSON:', errorText);
+            errorData = { error: errorText || `HTTP ${response.status}: ${response.statusText}` };
+          }
+          
           throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-        } catch (jsonError) {
-          // If response is not JSON, use status text
+        } catch (responseError) {
+          console.error('❌ Failed to read error response:', responseError);
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
       }
