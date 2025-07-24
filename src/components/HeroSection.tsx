@@ -32,7 +32,7 @@ const HeroSection = () => {
           <div className="text-center lg:text-left animate-fade-up">
             <div className="mb-4 sm:mb-6">
               <span className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-saree-gold/10 text-saree-burgundy mobile-small-text sm:text-sm font-medium border border-saree-gold/20 animate-scale-in">
-                ✨ Premium Collection 2024
+                ✨ Premium Collection 2025
               </span>
             </div>
             
