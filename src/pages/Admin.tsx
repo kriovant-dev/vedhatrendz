@@ -133,21 +133,6 @@ const Admin = () => {
     },
   });
 
-  // Cleanup empty categories mutation
-  const cleanupCategoriesMutation = useMutation({
-    mutationFn: CategoryService.deleteEmptyCategories,
-    onSuccess: (result) => {
-      if (result.deletedCount > 0) {
-        toast.success(`🗑️ Deleted ${result.deletedCount} empty categories: ${result.deletedCategories.join(', ')}`);
-      } else {
-        toast.info('✅ No empty categories found to delete');
-      }
-    },
-    onError: (error) => {
-      toast.error('❌ Failed to cleanup empty categories');
-      console.error('Cleanup error:', error);
-    },
-  });
 
   // Filter orders
   const filteredOrders = (orders || []).filter(order => {
@@ -334,25 +319,6 @@ Thank you for choosing Rang-e-Saree Haven! ✨`;
             </div>
           </div>
           <div className="flex flex-col xs:flex-row gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => cleanupCategoriesMutation.mutate()}
-              disabled={cleanupCategoriesMutation.isPending}
-              className="text-orange-600 hover:text-orange-700 border-orange-200 hover:border-orange-300 mobile-button"
-            >
-              {cleanupCategoriesMutation.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600 mr-2"></div>
-                  <span className="mobile-small-text">Cleaning...</span>
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  <span className="hidden xs:inline mobile-small-text">Cleanup Empty Categories</span>
-                  <span className="xs:hidden mobile-small-text">Cleanup</span>
-                </>
-              )}
-            </Button>
             <Button variant="outline" onClick={logout} className="flex items-center gap-2 mobile-button">
               <LogOut className="h-4 w-4" />
               <span className="mobile-small-text">Logout</span>

@@ -361,9 +361,9 @@ const ShippingPolicy = () => {
                 Having issues with your shipment? We're here to help!
               </p>
               <div className="space-y-2 mobile-small-text">
-                <div><strong>Email:</strong> shipping@vedhatrendz.com</div>
-                <div><strong>Phone:</strong> +91 XXXXX XXXXX</div>
-                <div><strong>WhatsApp:</strong> +91 XXXXX XXXXX</div>
+                <div><strong>Email:</strong> vedhatrendz@gmail.com</div>
+                <div><strong>Phone:</strong> +91 7702284509</div>
+                <div><strong>WhatsApp:</strong> +91 7702284509</div>
                 <div><strong>Support Hours:</strong> Monday to Saturday, 10:00 AM to 6:00 PM (IST)</div>
               </div>
               <p className="mobile-small-text text-muted-foreground mt-4">

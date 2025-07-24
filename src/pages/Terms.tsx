@@ -270,7 +270,7 @@ const Terms = () => {
             </CardHeader>
             <CardContent>
               <p className="mobile-small-text text-muted-foreground">
-                These Terms and Conditions are governed by the laws of India. Any disputes arising from these terms or your use of our website shall be subject to the exclusive jurisdiction of the courts in Gujarat, India.
+                These Terms and Conditions are governed by the laws of India. Any disputes arising from these terms or your use of our website shall be subject to the exclusive jurisdiction of the courts in Andhra Pradesh, India.
               </p>
             </CardContent>
           </Card>
@@ -309,9 +309,9 @@ const Terms = () => {
                 If you have any questions about these Terms and Conditions, please contact us:
               </p>
               <div className="space-y-2 mobile-small-text">
-                <div><strong>Email:</strong> support@vedhatrendz.com</div>
-                <div><strong>Phone:</strong> +91 XXXXX XXXXX</div>
-                <div><strong>Address:</strong> Somewhere in the world, Gujarat, India 530001</div>
+                <div><strong>Email:</strong> vedhatrendz@gmail.com</div>
+                <div><strong>Phone:</strong> +91 7702284509</div>
+                <div><strong>Address:</strong> Vizag, Andhra Pradesh, India</div>
                 <div><strong>Business Hours:</strong> Monday to Saturday, 10:00 AM to 6:00 PM (IST)</div>
               </div>
             </CardContent>

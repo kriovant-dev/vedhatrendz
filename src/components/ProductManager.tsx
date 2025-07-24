@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CategoryManager from '@/components/CategoryManager';
 import MultiImageUpload from '@/components/MultiImageUpload';
 import { ImageKitService, ImageUploadResult } from '@/services/imagekitService';
 import { CategoryService } from '@/services/categoryService';

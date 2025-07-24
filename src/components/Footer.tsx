@@ -1,9 +1,9 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { 
   Facebook, 
   Instagram, 
@@ -17,8 +17,61 @@ import {
   Shield,
   Truck
 } from 'lucide-react';
+import { newsletterService } from '@/services/newsletterService';
+import { CategoryService } from '@/services/categoryService';
+import { useToast } from '@/hooks/use-toast';
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const { toast } = useToast();
+
+  // Fetch categories from database
+  const { data: categories = [] } = useQuery({
+    queryKey: ['footer-categories'],
+    queryFn: CategoryService.getCategories,
+  });
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubscribing(true);
+    try {
+      const success = await newsletterService.subscribe(email);
+      if (success) {
+        toast({
+          title: "Successfully Subscribed!",
+          description: "Thank you for subscribing to our newsletter. You'll receive updates about new collections and exclusive offers.",
+        });
+        setEmail('');
+      } else {
+        toast({
+          title: "Already Subscribed",
+          description: "This email is already subscribed to our newsletter.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      toast({
+        title: "Subscription Failed",
+        description: "There was an error subscribing to our newsletter. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
+  // Create dynamic footer sections using database categories
   const footerSections = [
     {
       title: "Legal & Policies",
@@ -27,17 +80,16 @@ const Footer = () => {
         { label: "Privacy Policy", href: "/privacy" },
         { label: "Shipping Policy", href: "/shipping-policy" },
         { label: "Refund Policy", href: "/refund-policy" },
-        { label: "Size Guide", href: "/size-guide" }
       ]
     },
     {
       title: "Shop & Discover",
       links: [
         { label: "All Sarees", href: "/sarees" },
-        { label: "Cotton Sarees", href: "/cotton-sarees" },
-        { label: "Silk Sarees", href: "/silk-sarees" },
-        { label: "Wedding Collection", href: "/wedding-sarees" },
-        { label: "New Arrivals", href: "/new-arrivals" }
+        ...categories.slice(0, 6).map(category => ({
+          label: category.name,
+          href: `/sarees?category=${encodeURIComponent(category.name)}`
+        }))
       ]
     },
     {
@@ -47,7 +99,8 @@ const Footer = () => {
         { label: "FAQ", href: "/faq" },
         { label: "Care Instructions", href: "/care-instructions" },
         { label: "Track Your Order", href: "/orders" },
-        { label: "About Us", href: "/about" }
+        { label: "About Us", href: "/about" },
+        { label: "Admin Panel", href: "/admin" }
       ]
     }
   ];
@@ -80,19 +133,24 @@ const Footer = () => {
             </div>
             
             <div className="space-y-4">
-              <div className="flex gap-2">
+              <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
                 <Input 
                   type="email" 
                   placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60"
+                  disabled={isSubscribing}
                 />
                 <Button 
+                  type="submit"
                   variant="secondary" 
                   className="bg-saree-gold text-primary hover:bg-saree-gold/90 whitespace-nowrap"
+                  disabled={isSubscribing}
                 >
-                  Subscribe
+                  {isSubscribing ? 'Subscribing...' : 'Subscribe'}
                 </Button>
-              </div>
+              </form>
               <p className="text-xs text-primary-foreground/60">
                 By subscribing, you agree to our{' '}
                 <Link to="/privacy" className="text-saree-gold hover:underline">
@@ -128,19 +186,19 @@ const Footer = () => {
               <div className="flex items-center gap-3">
                 <MapPin className="h-4 w-4 text-saree-gold" />
                 <span className="text-sm text-primary-foreground/80">
-                  Somewhere in the world, Gujarat, India 530001
+                  Vizag, Andhra Pradesh, India
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-saree-gold" />
                 <span className="text-sm text-primary-foreground/80">
-                  +91 XXXXX XXXXX 
+                  +91 7702284509
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-saree-gold" />
                 <span className="text-sm text-primary-foreground/80">
-                  info@vedhatrendz.com
+                  vedhatrendz@gmail.com
                 </span>
               </div>
             </div>
@@ -191,7 +249,7 @@ const Footer = () => {
       {/* Trust Indicators */}
       <div className="border-t border-primary-foreground/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div className="flex flex-col items-center gap-2">
               <Truck className="h-8 w-8 text-saree-gold" />
               <div className="text-sm font-medium">Free Shipping</div>
@@ -206,11 +264,6 @@ const Footer = () => {
               <Heart className="h-8 w-8 text-saree-gold" />
               <div className="text-sm font-medium">Quality Assured</div>
               <div className="text-xs text-primary-foreground/60">Handpicked collection</div>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <CreditCard className="h-8 w-8 text-saree-gold" />
-              <div className="text-sm font-medium">Easy Returns</div>
-              <div className="text-xs text-primary-foreground/60">30-day policy</div>
             </div>
           </div>
         </div>

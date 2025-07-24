@@ -231,7 +231,7 @@ class EmailService {
             </div>
 
             <p style="text-align: center; margin: 20px 0;">
-              <strong>Questions?</strong> Contact us at <a href="mailto:support@vedhatrendz.com">support@vedhatrendz.com</a> or call us at +91-XXXXXXXXXX
+              <strong>Questions?</strong> Contact us at <a href="mailto:vedhatrendz@gmail.com">vedhatrendz@gmail.com</a> or call us at +91-7702284509
             </p>
           </div>
 
@@ -309,7 +309,7 @@ class EmailService {
 
   async sendOrderNotificationToAdmin(orderData: OrderEmailData): Promise<boolean> {
     try {
-      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'admin@vedhatrendz.com';
+      const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'vedhatrendz@gmail.com';
       
       return await this.sendEmailToBackend({
         to: adminEmail,
@@ -401,7 +401,7 @@ ${orderData.shippingAddress.country}
 - Your order will be delivered within 5-7 business days
 - Payment will be collected upon delivery (COD)
 
-Questions? Contact us at support@vedhatrendz.com
+Questions? Contact us at vedhatrendz@gmail.com
 
 Thank you for choosing VedhaTrendz!
 Where tradition meets elegance

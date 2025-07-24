@@ -156,7 +156,7 @@ const RefundPolicy = () => {
                   <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">1</div>
                   <div>
                     <h5 className="font-semibold mobile-small-text">Contact Us Within 24 Hours</h5>
-                    <p className="mobile-small-text text-muted-foreground">Email us at support@vedhatrendz.com with your order number and unpacking video</p>
+                    <p className="mobile-small-text text-muted-foreground">Email us at vedhatrendz@gmail.com with your order number and unpacking video</p>
                   </div>
                 </div>
                 
@@ -315,9 +315,9 @@ const RefundPolicy = () => {
                 For any exchange requests or questions about our policy:
               </p>
               <div className="space-y-2 mobile-small-text">
-                <div><strong>Email:</strong> support@vedhatrendz.com (for exchanges)</div>
-                <div><strong>WhatsApp:</strong> +91 XXXXX XXXXX</div>
-                <div><strong>Phone:</strong> +91 XXXXX XXXXX</div>
+                <div><strong>Email:</strong> vedhatrendz@gmail.com (for exchanges)</div>
+                <div><strong>WhatsApp:</strong> +91 7702284509</div>
+                <div><strong>Phone:</strong> +91 7702284509</div>
                 <div><strong>Support Hours:</strong> Monday to Saturday, 10:00 AM to 6:00 PM (IST)</div>
               </div>
               <p className="mobile-small-text text-muted-foreground mt-4">
