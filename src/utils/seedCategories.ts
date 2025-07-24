@@ -16,44 +16,44 @@ export const seedDefaultCategories = async () => {
 
     const defaultCategories = [
       {
-        name: 'Silk Sarees',
-        slug: 'silk-sarees',
-        description: 'Luxurious silk sarees perfect for weddings and special occasions',
+        name: 'Lehengas',
+        slug: 'lehengas',
+        description: 'lehengas',
         sort_order: 1,
         is_active: true
       },
       {
-        name: 'Cotton Sarees',
-        slug: 'cotton-sarees',
-        description: 'Comfortable and breathable cotton sarees for daily wear',
+        name: 'Sarees',
+        slug: 'sarees',
+        description: 'Sarees',
         sort_order: 2,
         is_active: true
       },
       {
-        name: 'Wedding Collection',
-        slug: 'wedding-collection',
-        description: 'Exquisite bridal and wedding sarees for your special day',
-        sort_order: 3,
+        name: 'Kurtiset',
+        slug: 'kurtiset',
+        description: '',
+        sort_order: 3,  
         is_active: true
       },
       {
-        name: 'Designer Sarees',
-        slug: 'designer-sarees',
-        description: 'Exclusive designer collection with contemporary designs',
+        name: 'Gowns',
+        slug: 'gowns',
+        description: '',
         sort_order: 4,
         is_active: true
       },
       {
-        name: 'Festive Collection',
-        slug: 'festive-collection',
-        description: 'Vibrant and colorful sarees for festivals and celebrations',
+        name: 'Stitched Blouse Sarees',
+        slug: 'stitched-blouse-sarees',
+        description: '',
         sort_order: 5,
         is_active: true
       },
       {
-        name: 'Casual Wear',
-        slug: 'casual-wear',
-        description: 'Elegant yet comfortable sarees for everyday occasions',
+        name: 'Kids Wear',
+        slug: 'kidswear',
+        description: '',
         sort_order: 6,
         is_active: true
       }
