@@ -138,7 +138,7 @@ const HeroSection = () => {
             </h1>
 
             <p className="mobile-text sm:text-lg lg:text-xl text-muted-foreground mb-6 sm:mb-8 max-w-xl">
-              Discover our exquisite collection of handcrafted sarees, where tradition meets contemporary fashion. Each piece tells a story of heritage and artistry.
+              Discover our exquisite collection of handpicked sarees, where tradition meets contemporary fashion. Whether you are looking for a classical saree for a wedding, a vibrant cotton saree daily wear , or an intricate designer piece for a special occasion, we have something perfect for every moment and every personality.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
@@ -163,8 +163,8 @@ const HeroSection = () => {
                 <div className="mobile-small-text text-muted-foreground">Happy Customers</div>
               </div>
               <div className="text-center lg:text-left">
-                <div className="text-lg sm:text-2xl font-bold text-primary">3+</div>
-                <div className="mobile-small-text text-muted-foreground">Years Legacy</div>
+                <div className="text-lg sm:text-2xl font-bold text-primary">22K+</div>
+                <div className="mobile-small-text text-muted-foreground">Instagram Followers</div>
               </div>
             </div>
           </div>

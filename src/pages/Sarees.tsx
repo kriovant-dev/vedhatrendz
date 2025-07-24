@@ -259,7 +259,7 @@ const Sarees = () => {
             Saree Collection
           </h1>
           <p className="text-muted-foreground mobile-text">
-            Discover our exquisite collection of traditional and contemporary sarees
+            Discover our exquisite collection of handpicked sarees, where tradition meets contemporary fashion. Whether you are looking for a classical saree for a wedding, a vibrant cotton saree daily wear , or an intricate designer piece for a special occasion, we have something perfect for every moment and every personality.
           </p>
         </div>
 
