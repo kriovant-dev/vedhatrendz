@@ -23,6 +23,14 @@ interface OrderEmailData {
   };
 }
 
+interface ContactFormData {
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+}
+
 class EmailService {
   private readonly emailServerUrl: string;
 
@@ -441,7 +449,106 @@ Where tradition meets elegance
       return false;
     }
   }
+
+  private generateContactEmailHTML(contactData: ContactFormData): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Contact Form Submission</title>
+      </head>
+      <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #8B5A3C 0%, #D4AF37 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">New Contact Form Submission</h1>
+          <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">VedhaTrendz - Customer Inquiry</p>
+        </div>
+        
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #8B5A3C; margin-top: 0; border-bottom: 2px solid #D4AF37; padding-bottom: 10px;">Customer Information</h2>
+            
+            <div style="margin-bottom: 15px;">
+              <strong style="color: #8B5A3C;">Name:</strong>
+              <span style="margin-left: 10px; color: #333;">${contactData.name}</span>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <strong style="color: #8B5A3C;">Email:</strong>
+              <span style="margin-left: 10px; color: #333;">
+                <a href="mailto:${contactData.email}" style="color: #D4AF37; text-decoration: none;">${contactData.email}</a>
+              </span>
+            </div>
+            
+            ${contactData.phone ? `
+            <div style="margin-bottom: 15px;">
+              <strong style="color: #8B5A3C;">Phone:</strong>
+              <span style="margin-left: 10px; color: #333;">
+                <a href="tel:${contactData.phone}" style="color: #D4AF37; text-decoration: none;">${contactData.phone}</a>
+              </span>
+            </div>
+            ` : ''}
+            
+            <div style="margin-bottom: 15px;">
+              <strong style="color: #8B5A3C;">Subject:</strong>
+              <span style="margin-left: 10px; color: #333;">${contactData.subject}</span>
+            </div>
+          </div>
+          
+          <div style="background: white; padding: 25px; border-radius: 8px;">
+            <h3 style="color: #8B5A3C; margin-top: 0; border-bottom: 2px solid #D4AF37; padding-bottom: 10px;">Message</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; border-left: 4px solid #D4AF37;">
+              <p style="margin: 0; white-space: pre-wrap; color: #333; line-height: 1.6;">${contactData.message}</p>
+            </div>
+          </div>
+          
+          <div style="margin-top: 25px; padding: 20px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #D4AF37;">
+            <p style="margin: 0; color: #856404;">
+              <strong>📧 Quick Actions:</strong><br>
+              • Reply to: <a href="mailto:${contactData.email}" style="color: #D4AF37;">${contactData.email}</a><br>
+              ${contactData.phone ? `• Call: <a href="tel:${contactData.phone}" style="color: #D4AF37;">${contactData.phone}</a><br>` : ''}
+              • Received: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+            </p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
+          <p style="margin: 0;">This email was generated automatically from the VedhaTrendz contact form.</p>
+          <p style="margin: 5px 0 0 0;">VedhaTrendz - Where tradition meets elegance</p>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  async sendContactFormNotification(contactData: ContactFormData): Promise<boolean> {
+    try {
+      console.log('📧 Sending contact form notification...');
+
+      const emailHTML = this.generateContactEmailHTML(contactData);
+      
+      // Email to admin
+      const adminEmailResult = await this.sendEmailToBackend({
+        to: 'vedhatrendz@gmail.com', // Admin email
+        subject: `New Contact Form Submission: ${contactData.subject}`,
+        html: emailHTML,
+        text: `New contact form submission from ${contactData.name} (${contactData.email}):\n\nSubject: ${contactData.subject}\n\nMessage:\n${contactData.message}\n\nPhone: ${contactData.phone || 'Not provided'}`
+      });
+
+      if (adminEmailResult) {
+        console.log('✅ Contact form notification sent to admin successfully');
+        return true;
+      } else {
+        console.error('❌ Failed to send contact form notification to admin');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Contact form notification error:', error);
+      return false;
+    }
+  }
 }
 
 export const emailService = new EmailService();
-export type { OrderEmailData };
+export type { OrderEmailData, ContactFormData };
