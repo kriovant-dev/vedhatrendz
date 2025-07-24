@@ -26,12 +26,12 @@ const Categories = () => {
 
   // Default categories as fallback if no categories are found in database
   const defaultCategories = [
-    { id: 'silk', name: 'Silk Sarees', slug: 'silk-sarees', description: 'Luxurious silk sarees for special occasions' },
-    { id: 'cotton', name: 'Cotton Sarees', slug: 'cotton-sarees', description: 'Comfortable cotton sarees for daily wear' },
-    { id: 'wedding', name: 'Wedding Sarees', slug: 'wedding-sarees', description: 'Bridal and wedding collection' },
-    { id: 'designer', name: 'Designer Collection', slug: 'designer-collection', description: 'Exclusive designer sarees' },
-    { id: 'casual', name: 'Casual Wear', slug: 'casual-wear', description: 'Everyday casual sarees' },
-    { id: 'festive', name: 'Festive Collection', slug: 'festive-collection', description: 'Festival and celebration sarees' }
+    { id: 'sarees', name: 'Sarees', slug: 'silk-sarees', description: 'Luxurious silk sarees for special occasions', image_link: '' },
+    { id: 'sarees-with-clouse', name: 'Sarees with Stitched Blouse', slug: 'sarees-with-stitched-blouse', description: 'Comfortable cotton sarees for daily wear', image_link: '' },
+    { id: 'lehengas', name: 'Lehengas', slug: 'lehengas', description: 'Bridal and wedding collection', image_link: '' },
+    { id: 'gowns', name: 'Gowns', slug: 'gowns', description: 'Exclusive designer gowns', image_link: '' },
+    { id: 'kids-wear', name: 'Kids Wear', slug: 'kids-wear', description: 'Everyday casual wear for kids', image_link: '' },
+    { id: 'kurti-sets', name: 'Kurti Sets', slug: 'kurti-set', description: 'Festival and celebration kurtis', image_link: '' }
   ];
 
   // Use database categories if available, otherwise use defaults
@@ -155,11 +155,28 @@ const Categories = () => {
                       }} />
                     </div>
 
-                    {/* Category Icon */}
+                    {/* Category Icon/Image Badge */}
                     <div className="relative z-10 text-center text-white">
                       <div className="mb-2 sm:mb-4">
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all duration-300 group-hover:scale-110">
-                          <span className="text-lg sm:text-2xl">{getCategoryIcon(category.name)}</span>
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:bg-white/30 transition-all duration-300 group-hover:scale-110 overflow-hidden">
+                          {category.image_link ? (
+                            <img
+                              src={category.image_link}
+                              alt={category.name}
+                              className="w-full h-full object-cover rounded-full"
+                              onError={(e) => {
+                                // Fallback to emoji if image fails to load
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = `<span class="text-xl sm:text-3xl">${getCategoryIcon(category.name)}</span>`;
+                                }
+                              }}
+                            />
+                          ) : (
+                            <span className="text-xl sm:text-3xl">{getCategoryIcon(category.name)}</span>
+                          )}
                         </div>
                       </div>
                     </div>

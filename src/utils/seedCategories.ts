@@ -16,44 +16,44 @@ export const seedDefaultCategories = async () => {
 
     const defaultCategories = [
       {
-        name: 'Lehengas',
-        slug: 'lehengas',
-        description: 'lehengas',
+        name: 'Sarees',
+        slug: 'sarees',
+        description: 'Beautiful traditional sarees',
         sort_order: 1,
         is_active: true
       },
       {
-        name: 'Sarees',
-        slug: 'sarees',
-        description: 'Sarees',
+        name: 'Sarees with Stitched Blouse',
+        slug: 'sarees-with-stitched-blouse',
+        description: 'Sarees with ready-to-wear stitched blouses',
         sort_order: 2,
+        is_active: true
+      },
+      {
+        name: 'Lehengas',
+        slug: 'lehengas',
+        description: 'Elegant lehengas for special occasions',
+        sort_order: 3,
         is_active: true
       },
       {
         name: 'Kurtiset',
         slug: 'kurtiset',
-        description: '',
-        sort_order: 3,  
+        description: 'Comfortable kurti sets',
+        sort_order: 4,
         is_active: true
       },
       {
         name: 'Gowns',
         slug: 'gowns',
-        description: '',
-        sort_order: 4,
-        is_active: true
-      },
-      {
-        name: 'Stitched Blouse Sarees',
-        slug: 'stitched-blouse-sarees',
-        description: '',
+        description: 'Stylish gowns for parties and events',
         sort_order: 5,
         is_active: true
       },
       {
-        name: 'Kids Wear',
+        name: 'Kidswear',
         slug: 'kidswear',
-        description: '',
+        description: 'Adorable clothing for kids',
         sort_order: 6,
         is_active: true
       }

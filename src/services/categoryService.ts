@@ -6,6 +6,7 @@ export interface Category {
   slug: string;
   description?: string;
   image?: string;
+  image_link?: string;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -17,6 +18,7 @@ export interface CreateCategoryData {
   slug: string;
   description?: string;
   image?: string;
+  image_link?: string;
   is_active?: boolean;
   sort_order?: number;
 }
