@@ -97,7 +97,6 @@ const Footer = () => {
       links: [
         { label: "Contact Us", href: "/contact" },
         { label: "FAQ", href: "/faq" },
-        { label: "Care Instructions", href: "/care-instructions" },
         { label: "Track Your Order", href: "/orders" },
         { label: "About Us", href: "/about" },
         { label: "Admin Panel", href: "/admin" }
