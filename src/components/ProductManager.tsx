@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MultiImageUpload from '@/components/MultiImageUpload';
+import ColorSelector from '@/components/ColorSelector';
 import { ImageKitService, ImageUploadResult } from '@/services/imagekitService';
 import { CategoryService } from '@/services/categoryService';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ interface Product {
   reviews_count: number | null;
   is_new: boolean | null;
   is_bestseller: boolean | null;
+  is_featured_hero: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,12 +50,13 @@ interface ProductFormData {
   category: string;
   fabric: string;
   occasion: string;
-  colors: string;
+  colors: string[];
   sizes: string;
   images: string; // Keep for backward compatibility
   stock_quantity: string;
   is_new: boolean;
   is_bestseller: boolean;
+  is_featured_hero: boolean;
 }
 
 interface ProductEditData extends Omit<Product, 'images' | 'image_file_ids'> {
@@ -78,6 +81,7 @@ interface CreateProductData {
   stock_quantity?: number | null;
   is_new?: boolean | null;
   is_bestseller?: boolean | null;
+  is_featured_hero?: boolean | null;
 }
 
 const ProductManager = () => {
@@ -92,12 +96,13 @@ const ProductManager = () => {
     category: '',
     fabric: '',
     occasion: '',
-    colors: '',
+    colors: [],
     sizes: 'S,M,L,XL',
     images: '',
     stock_quantity: '0',
     is_new: false,
     is_bestseller: false,
+    is_featured_hero: false,
   });
 
   const [uploadedImages, setUploadedImages] = useState<ImageUploadResult[]>([]);
@@ -285,12 +290,13 @@ const ProductManager = () => {
       category: '',
       fabric: '',
       occasion: '',
-      colors: '',
+      colors: [],
       sizes: 'S,M,L,XL',
       images: '',
       stock_quantity: '0',
       is_new: false,
       is_bestseller: false,
+      is_featured_hero: false,
     });
     setUploadedImages([]);
   };
@@ -306,12 +312,13 @@ const ProductManager = () => {
       category: product.category,
       fabric: product.fabric || '',
       occasion: product.occasion || '',
-      colors: product.colors.join(','),
+      colors: product.colors || [],
       sizes: product.sizes.join(','),
       images: product.images.join(','),
       stock_quantity: product.stock_quantity?.toString() || '0',
       is_new: product.is_new || false,
       is_bestseller: product.is_bestseller || false,
+      is_featured_hero: product.is_featured_hero || false,
     });
     setIsDialogOpen(true);
   };
@@ -347,13 +354,14 @@ const ProductManager = () => {
         original_price: formData.original_price ? Math.round(parseFloat(formData.original_price) * 100) : null,
         fabric: formData.fabric || null,
         occasion: formData.occasion || null,
-        colors: formData.colors.split(',').map(c => c.trim()).filter(c => c),
+        colors: formData.colors,
         sizes: formData.sizes.split(',').map(s => s.trim()).filter(s => s),
         images: finalImages,
         image_file_ids: uploadedImages.map(img => img.fileId || ''), // Store ImageKit file IDs
         stock_quantity: parseInt(formData.stock_quantity) || 0,
         is_new: formData.is_new,
         is_bestseller: formData.is_bestseller,
+        is_featured_hero: formData.is_featured_hero,
       };
 
       if (editingProduct) {
@@ -532,23 +540,22 @@ const ProductManager = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Colors (comma-separated)</label>
-                  <Input
-                    value={formData.colors}
-                    onChange={(e) => setFormData({ ...formData, colors: e.target.value })}
-                    placeholder="e.g., red, gold, blue"
+                  <ColorSelector
+                    selectedColors={formData.colors}
+                    onColorsChange={(colors) => setFormData({ ...formData, colors })}
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Sizes (comma-separated)</label>
-                  <Input
-                    value={formData.sizes}
-                    onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
-                    placeholder="e.g., S, M, L, XL"
-                  />
-                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Sizes (comma-separated)</label>
+                <Input
+                  value={formData.sizes}
+                  onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
+                  placeholder="e.g., S, M, L, XL"
+                />
               </div>
 
               <div>
@@ -599,6 +606,15 @@ const ProductManager = () => {
                     onChange={(e) => setFormData({ ...formData, is_bestseller: e.target.checked })}
                   />
                   <label htmlFor="is_bestseller" className="text-sm font-medium">Mark as Bestseller</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="is_featured_hero"
+                    checked={formData.is_featured_hero}
+                    onChange={(e) => setFormData({ ...formData, is_featured_hero: e.target.checked })}
+                  />
+                  <label htmlFor="is_featured_hero" className="text-sm font-medium">Featured Hero Carousel</label>
                 </div>
               </div>
 
@@ -693,9 +709,10 @@ const ProductManager = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-wrap">
                         {product.is_new && <Badge className="bg-green-100 text-green-800">New</Badge>}
                         {product.is_bestseller && <Badge className="bg-blue-100 text-blue-800">Bestseller</Badge>}
+                        {product.is_featured_hero && <Badge className="bg-purple-100 text-purple-800">Featured</Badge>}
                       </div>
                     </TableCell>
                     <TableCell>

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Heart, ShoppingBag, Star, ArrowLeft, Share2, Truck, Shield, RotateCcw } from 'lucide-react';
+import { Heart, ShoppingBag, ArrowLeft, Share2, Truck, Shield, RotateCcw } from 'lucide-react';
 import { firebase } from '@/integrations/firebase/client';
 import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
@@ -24,8 +24,6 @@ interface Product {
   category: string;
   fabric: string;
   occasion: string;
-  rating: number;
-  reviews_count: number;
   colors: string[];
   sizes: string[];
   images: string[];
@@ -340,11 +338,6 @@ const ProductDetail = () => {
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">{product.name}</h1>
               
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 sm:h-5 sm:w-5 fill-saree-gold text-saree-gold" />
-                  <span className="font-medium mobile-text">{product.rating}</span>
-                  <span className="text-muted-foreground mobile-small-text">({product.reviews_count} reviews)</span>
-                </div>
                 <Badge variant="outline">{product.category}</Badge>
               </div>
 
@@ -388,15 +381,24 @@ const ProductDetail = () => {
             {product.colors && product.colors.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-3">Color: {selectedColor}</h3>
-                <div className="flex gap-2">
+                <div className="flex gap-3 flex-wrap">
                   {product.colors.map((color) => (
                     <button
                       key={color}
                       onClick={() => setSelectedColor(color)}
-                      className={`w-10 h-10 rounded-full border-2 ${getColorClass(color)} ${
-                        selectedColor === color ? 'border-primary ring-2 ring-primary/20' : 'border-border'
+                      className={`flex flex-col items-center gap-2 p-2 rounded-lg border-2 transition-all ${
+                        selectedColor === color 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border hover:border-primary/50'
                       }`}
-                    />
+                    >
+                      <div 
+                        className={`w-8 h-8 rounded-full border-2 ${getColorClass(color)} ${
+                          selectedColor === color ? 'ring-2 ring-primary/30' : ''
+                        }`}
+                      />
+                      <span className="text-xs font-medium capitalize">{color}</span>
+                    </button>
                   ))}
                 </div>
               </div>

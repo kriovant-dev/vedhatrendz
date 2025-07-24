@@ -1,10 +1,97 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Star, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowRight, Star, Sparkles, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
+import { firebase } from '@/integrations/firebase/client';
+import { useCart } from '@/contexts/CartContext';
+import { ImageKitService } from '@/services/imagekitService';
+
+interface FeaturedProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  original_price: number;
+  category: string;
+  colors: string[];
+  sizes: string[];
+  images: string[];
+  is_featured_hero: boolean;
+}
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Fetch featured hero products
+  const { data: featuredProducts = [], isLoading } = useQuery({
+    queryKey: ['featured-hero-products'],
+    queryFn: async () => {
+      const { data, error } = await firebase
+        .from('products')
+        .select('*')
+        .eq('is_featured_hero', true)
+        .execute();
+      
+      if (error) throw error;
+      return data as FeaturedProduct[];
+    },
+  });
+
+  // Auto-slide functionality
+  useEffect(() => {
+    if (featuredProducts.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => 
+        prevIndex === featuredProducts.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 8000); // Slide every 8 seconds
+
+    return () => clearInterval(interval);
+  }, [featuredProducts.length]);
+
+  const nextSlide = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === featuredProducts.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === 0 ? featuredProducts.length - 1 : prevIndex - 1
+    );
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentIndex(index);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+    }).format(price / 100);
+  };
+
+  const handleAddToCart = (product: FeaturedProduct) => {
+    addToCart({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      color: product.colors[0] || '',
+      size: product.sizes[0] || 'Free Size',
+      quantity: 1,
+      image: product.images[0] || ''
+    });
+  };
+
+  // Use featured product data if available, otherwise fallback to static content
+  const currentProduct = featuredProducts[currentIndex];
+  const hasProducts = featuredProducts.length > 0;
 
   return (
     <section className="relative min-h-[80vh] sm:min-h-screen flex items-center justify-center overflow-hidden bg-gradient-subtle">
@@ -32,7 +119,7 @@ const HeroSection = () => {
           <div className="text-center lg:text-left animate-fade-up">
             <div className="mb-4 sm:mb-6">
               <span className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-saree-gold/10 text-saree-burgundy mobile-small-text sm:text-sm font-medium border border-saree-gold/20 animate-scale-in">
-                ✨ Premium Collection 2024
+                ✨ Premium Collection 2025
               </span>
             </div>
             
@@ -87,29 +174,124 @@ const HeroSection = () => {
             <div className="relative">
               {/* Main Image Container */}
               <div className="relative overflow-hidden rounded-2xl shadow-elegant hover-lift">
-                <div 
-                  className="aspect-[3/4] bg-gradient-primary flex items-center justify-center text-primary-foreground"
-                  style={{ minHeight: '400px' }}
-                >
-                  <div className="text-center">
-                    <div className="mb-4">
-                      <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto bg-primary-foreground/20 rounded-full flex items-center justify-center">
-                        <Sparkles className="w-8 h-8 sm:w-12 sm:h-12" />
+                {hasProducts && currentProduct ? (
+                  <>
+                    <div 
+                      className="aspect-[3/4] relative bg-gradient-to-br from-gray-50 to-gray-100"
+                      style={{ minHeight: '400px' }}
+                    >
+                      <img
+                        src={ImageKitService.getOptimizedImageUrl(currentProduct.images[0], {
+                          width: 600,
+                          height: 800,
+                          quality: 90
+                        })}
+                        alt={currentProduct.name}
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* Product Badges */}
+                      <div className="absolute top-4 left-4 flex flex-col gap-2">
+                        <Badge className="bg-primary text-primary-foreground">Featured</Badge>
+                        {currentProduct.original_price > currentProduct.price && (
+                          <Badge className="bg-green-600 text-white">
+                            {Math.round(((currentProduct.original_price - currentProduct.price) / currentProduct.original_price) * 100)}% OFF
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Navigation Arrows */}
+                      {featuredProducts.length > 1 && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg"
+                            onClick={prevSlide}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg"
+                            onClick={nextSlide}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Overlay with Product Info */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 hover:opacity-100 transition-smooth">
+                      <div className="absolute bottom-6 left-6 text-white">
+                        <h4 className="text-xl font-semibold mb-2">{currentProduct.name}</h4>
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-2xl font-bold">
+                            {formatPrice(currentProduct.price)}
+                          </span>
+                          {currentProduct.original_price > currentProduct.price && (
+                            <span className="text-lg text-white/70 line-through">
+                              {formatPrice(currentProduct.original_price)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => navigate(`/product/${currentProduct.id}`)}
+                            variant="outline"
+                            size="sm"
+                            className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                          >
+                            View Details
+                          </Button>
+                          <Button
+                            onClick={() => handleAddToCart(currentProduct)}
+                            size="sm"
+                            className="bg-primary text-primary-foreground hover:bg-primary/90"
+                          >
+                            <ShoppingBag className="w-4 h-4 mr-1" />
+                            Add to Cart
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                    <h3 className="mobile-text sm:text-2xl font-bold mb-2">Featured Saree</h3>
-                    <p className="text-primary-foreground/80">Handwoven Banarasi Silk</p>
+                  </>
+                ) : (
+                  <div 
+                    className="aspect-[3/4] bg-gradient-primary flex items-center justify-center text-primary-foreground"
+                    style={{ minHeight: '400px' }}
+                  >
+                    <div className="text-center">
+                      <div className="mb-4">
+                        <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto bg-primary-foreground/20 rounded-full flex items-center justify-center">
+                          <Sparkles className="w-8 h-8 sm:w-12 sm:h-12" />
+                        </div>
+                      </div>
+                      <h3 className="mobile-text sm:text-2xl font-bold mb-2">Featured Saree</h3>
+                      <p className="text-primary-foreground/80">Handwoven Banarasi Silk</p>
+                    </div>
                   </div>
-                </div>
-                
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-smooth">
-                  <div className="absolute bottom-6 left-6 text-white">
-                    <h4 className="text-xl font-semibold mb-2">Royal Heritage</h4>
-                    <p className="text-white/90">From ₹15,999</p>
-                  </div>
-                </div>
+                )}
               </div>
+
+              {/* Carousel Dots */}
+              {featuredProducts.length > 1 && (
+                <div className="flex justify-center mt-4 gap-2">
+                  {featuredProducts.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToSlide(index)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        index === currentIndex
+                          ? 'bg-primary scale-125'
+                          : 'bg-gray-300 hover:bg-gray-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Decorative Elements */}
               <div className="absolute -top-4 -right-4 w-20 h-20 bg-saree-gold rounded-full blur-xl opacity-30 animate-pulse-slow"></div>
@@ -121,7 +303,7 @@ const HeroSection = () => {
               <div className="bg-card border border-border rounded-lg p-4 shadow-soft backdrop-blur-sm">
                 <div className="flex items-center space-x-2">
                   <Star className="h-5 w-5 text-saree-gold fill-current" />
-                  <span className="text-sm font-medium">4.9 Rating</span>
+                  <span className="text-sm font-medium">Best Rated</span>
                 </div>
               </div>
             </div>

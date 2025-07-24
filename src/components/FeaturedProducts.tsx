@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart, ShoppingBag, Star, Eye } from 'lucide-react';
+import { Heart, ShoppingBag, Eye } from 'lucide-react';
 import { firebase } from '@/integrations/firebase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
@@ -17,8 +17,6 @@ interface Product {
   name: string;
   price: number;
   original_price: number;
-  rating: number;
-  reviews_count: number;
   category: string;
   colors: string[];
   is_new: boolean;
@@ -36,7 +34,7 @@ const FeaturedProducts = () => {
     queryFn: async () => {
       const { data, error } = await firebase
         .from('products')
-        .select('id, name, price, original_price, rating, reviews_count, category, colors, is_new, is_bestseller, images')
+        .select('id, name, price, original_price, category, colors, is_new, is_bestseller, images')
         .limit(4)
         .execute();
       
@@ -265,13 +263,6 @@ const FeaturedProducts = () => {
                   <h3 className="font-medium text-foreground mb-1 sm:mb-2 line-clamp-2 group-hover:text-primary transition-smooth text-sm sm:text-base">
                     {product.name}
                   </h3>
-
-                  {/* Rating */}
-                  <div className="flex items-center gap-1 mb-2 sm:mb-3">
-                    <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-saree-gold text-saree-gold" />
-                    <span className="text-xs sm:text-sm font-medium">{product.rating}</span>
-                    <span className="text-xs text-muted-foreground">({product.reviews_count})</span>
-                  </div>
 
                   {/* Colors - Hide on very small screens to save space */}
                   {product.colors && product.colors.length > 0 && (
