@@ -77,15 +77,11 @@ const Contact = () => {
     },
     {
       question: 'What is your return policy?',
-      answer: 'We offer a 7-day return policy for unworn items in original condition with tags attached. Custom-made sarees are not eligible for returns.'
+      answer: 'The return policy is mentioned at the end of the website please go through that and reach out to us if you have any queries.'
     },
     {
       question: 'Do you offer international shipping?',
       answer: 'Yes, we ship worldwide. International shipping charges apply and delivery time varies by destination (7-21 business days).'
-    },
-    {
-      question: 'Can I get a custom-made saree?',
-      answer: 'Yes! We offer custom tailoring services. Contact us with your requirements, and our design team will help create your perfect saree.'
     }
   ];
 
@@ -276,20 +272,6 @@ const Contact = () => {
             <p className="text-muted-foreground">Visit us for a personalized shopping experience</p>
           </div>
           
-          <div className="bg-muted/50 rounded-2xl p-8 text-center">
-            <div className="max-w-md mx-auto">
-              <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
-              <h3 className="font-semibold text-xl mb-2">VedhaTrendz Flagship Store</h3>
-              <p className="text-muted-foreground mb-4">
-                Vizag, Andhra Pradesh<br />
-                India
-              </p>
-              <Badge variant="outline" className="mb-4">Open Today: 9:00 AM - 8:00 PM</Badge>
-              <p className="text-sm text-muted-foreground">
-                Interactive map coming soon. For directions, please call us or use your preferred navigation app.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
