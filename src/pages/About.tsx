@@ -65,8 +65,7 @@ const About = () => {
               About VedhaTrendz
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Your trusted destination for exquisite traditional and contemporary sarees. 
-              We bring you the finest collection of Indian textiles with modern convenience.
+              Artistry in every drape - handpicked, handcrafted and unique <br></br>We have sarees for every occasion ranging from festivals, cocktail parties, daytime social events or simply elegant everyday wear .
             </p>
           </div>
         </div>

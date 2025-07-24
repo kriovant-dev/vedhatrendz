@@ -177,7 +177,7 @@ const Footer = () => {
                 Vedha Trendz
               </h2>
               <p className="text-primary-foreground/80 leading-relaxed">
-                Your trusted destination for authentic, handcrafted sarees that celebrate the rich heritage of Indian textiles. Quality, tradition, and elegance in every thread.
+                Artistry in every drape - handpicked, handcrafted and unique <br></br>We have sarees for every occasion ranging from festivals, cocktail parties, daytime social events or simply elegant everyday wear .
               </p>
             </div>
 
