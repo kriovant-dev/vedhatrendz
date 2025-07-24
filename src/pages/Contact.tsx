@@ -73,7 +73,7 @@ const Contact = () => {
   const faqs = [
     {
       question: 'How long does shipping take?',
-      answer: 'We offer free shipping on orders above ₹2000. Standard delivery takes 3-7 business days, while express delivery takes 1-3 business days.'
+      answer: 'We offer free shipping all over India. Standard delivery takes 3-7 business days, while express delivery takes 1-3 business days.'
     },
     {
       question: 'What is your return policy?',

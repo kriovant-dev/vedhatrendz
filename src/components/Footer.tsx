@@ -253,7 +253,7 @@ const Footer = () => {
             <div className="flex flex-col items-center gap-2">
               <Truck className="h-8 w-8 text-saree-gold" />
               <div className="text-sm font-medium">Free Shipping</div>
-              <div className="text-xs text-primary-foreground/60">On orders above ₹999</div>
+              <div className="text-xs text-primary-foreground/60">All over India</div>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Shield className="h-8 w-8 text-saree-gold" />
