@@ -6,38 +6,38 @@ const Testimonials = () => {
   const testimonials = [
     {
       id: 1,
-      name: "Priya Sharma",
-      location: "Mumbai, Maharashtra",
+      name: "Komali",
+      location: "Hyderabad, Telangana",
       rating: 5,
-      review: "The quality of the Banarasi saree I purchased is absolutely stunning. The intricate work and attention to detail is exceptional. I received so many compliments at my cousin's wedding!",
-      saree: "Royal Banarasi Silk",
+      review: "The recent lehanga which I have purchased from you is excellent.. quality and fitting of blouse and lehanga is top notch. Thank you for maintaining such good quality and fast delivery service.",
+      saree: "Paithani Lehanga",
       image: "customer1"
     },
     {
       id: 2,
-      name: "Anita Reddy",
-      location: "Hyderabad, Telangana",
+      name: "Swetha",
+      location: "Nellore, Andhra Pradesh",
       rating: 5,
-      review: "Fast delivery and beautiful packaging. The saree was exactly as shown in the pictures. The customer service team was very helpful in choosing the right size and color.",
-      saree: "Kanjivaram Designer",
+      review: "Bought latest trending space silk saree from your page .. wore it for a wedding. Got many compliments from everyone. Thank you ",
+      saree: "Space silk saree with Jarkhan work ",
       image: "customer2"
     },
     {
       id: 3,
-      name: "Meera Patel",
-      location: "Ahmedabad, Gujarat",
+      name: "Priya",
+      location: "Hanumakonda, Telangana",
       rating: 5,
-      review: "I've been buying sarees from Vedhatrendz Haven for over a year now. Their collection is always fresh and the quality is consistent. Highly recommended for authentic Indian wear.",
-      saree: "Cotton Handloom",
+      review: "Absolutely in love with the saree I ordered! The fabric quality is top-notch, and it looked exactly like the pictures.  VedhaTrendz has become my go-to for festive shopping!",
+      saree: "Benarasi Saree",
       image: "customer3"
     },
     {
       id: 4,
-      name: "Kavya Nair",
-      location: "Kochi, Kerala",
+      name: "Anilisha",
+      location: "Chennai, Tamil Nadu",
       rating: 5,
-      review: "The bridal collection is absolutely divine! I found my dream wedding saree here. The team even provided styling tips and helped coordinate the blouse design. Perfect experience!",
-      saree: "Bridal Silk Collection",
+      review: "Was worried about online saree shopping, but VedhaTrendz made it so easy. The frock fitting is perfect and delivery was on time. Highly recommended. Customer service was very responsive too!!",
+      saree: "Mul Mul Cotton Frock",
       image: "customer4"
     }
   ];
