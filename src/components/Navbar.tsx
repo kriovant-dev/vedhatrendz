@@ -21,6 +21,7 @@ import CartDrawer from '@/components/CartDrawer';
 import EmailAuth from '@/components/EmailAuth';
 import FirebaseUserProfile from '@/components/FirebaseUserProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import { SearchService } from '../services/searchService';
 
 const Navbar = () => {
   const { getTotalItems } = useCart();
@@ -34,16 +35,29 @@ const Navbar = () => {
 
   const navigationItems = [
     { label: 'Home', href: '/', icon: Home },
-    { label: 'Sarees', href: '/sarees', icon: Grid3X3 },
+    { label: 'Collections', href: '/sarees', icon: Grid3X3 },
     { label: 'About', href: '/about', icon: Info },
     { label: 'Contact', href: '/contact', icon: Phone },
   ];
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Navigate to search page with query parameter
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+      try {
+        const result = await SearchService.performSearch(searchQuery.trim());
+        
+        if (result.type === 'product') {
+          // Redirect to specific product page
+          window.location.href = result.redirectUrl;
+        } else {
+          // Fall back to search page
+          window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        // Fall back to search page on error
+        window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+      }
     }
   };
 

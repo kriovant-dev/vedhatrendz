@@ -15,6 +15,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { toast } from 'sonner';
 import { ImageKitService } from '@/services/imagekitService';
+import { SearchService } from '../services/searchService';
 
 interface Product {
   id: string;
@@ -62,6 +63,28 @@ const Sarees = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Handle search form submission (same functionality as Navbar search)
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      try {
+        const result = await SearchService.performSearch(searchQuery.trim());
+        
+        if (result.type === 'product') {
+          // Redirect to specific product page
+          navigate(result.redirectUrl);
+        } else {
+          // Continue with current search filtering (no redirect needed)
+          console.log('🔍 Performing local search filtering for:', searchQuery.trim());
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        // Fall back to current search filtering
+        console.log('🔍 Falling back to local search filtering for:', searchQuery.trim());
+      }
+    }
+  };
 
   const { data: allProducts = [], isLoading } = useQuery({
     queryKey: ['products'],
@@ -267,16 +290,16 @@ const Sarees = () => {
         <div className="bg-card rounded-lg p-4 sm:p-6 mb-6 sm:mb-8 shadow-soft">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Search */}
-            <div className="relative sm:col-span-2 lg:col-span-1">
+            <form onSubmit={handleSearch} className="relative sm:col-span-2 lg:col-span-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 type="search"
-                placeholder="Search sarees..."
+                placeholder="Search Code..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 text-sm sm:text-base"
               />
-            </div>
+            </form>
 
             {/* Category Filter */}
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
