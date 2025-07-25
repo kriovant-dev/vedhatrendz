@@ -37,7 +37,7 @@ const Navbar = () => {
     // { label: 'Home', href: '/', icon: Home },
     // { label: 'About', href: '/about', icon: Info },
     // { label: 'Contact', href: '/contact', icon: Phone },
-    { label: 'Sarees', href: '/sarees', icon: Phone },
+    { label: 'Sarees', href: '/sarees?category=sarees', icon: Phone },
     { label: 'Lehengas', href: '/sarees?category=Lehengas', icon: Phone },
     { label: 'KurtiSets', href: '/sarees?category=Kurtiset', icon: Phone },
     { label: 'Gowns', href: '/sarees?category=Gowns', icon: Phone },
