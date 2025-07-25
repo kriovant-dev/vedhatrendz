@@ -279,10 +279,10 @@ const Sarees = () => {
         {/* Page Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="font-display mobile-heading font-bold gradient-primary bg-clip-text text-transparent mb-4">
-            Saree Collection
+            One stop destination for your fashion needs
           </h1>
           <p className="text-muted-foreground mobile-text">
-            Discover our exquisite collection of handpicked sarees, where tradition meets contemporary fashion. Whether you are looking for a classical saree for a wedding, a vibrant cotton saree daily wear , or an intricate designer piece for a special occasion, we have something perfect for every moment and every personality.
+            Discover our exquisite collection of handpicked sarees, where tradition meets contemporary fashion. Whether you are looking for a vibrant saree for a wedding, stunning lehangas, daily wear and party wear kurtisets and traditional outfits for your little ones , we have something perfect for every moment and every personality.
           </p>
         </div>
 
@@ -323,10 +323,10 @@ const Sarees = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Prices</SelectItem>
-                <SelectItem value="0-5000">Under ₹5,000</SelectItem>
-                <SelectItem value="5000-10000">₹5,000 - ₹10,000</SelectItem>
-                <SelectItem value="10000-20000">₹10,000 - ₹20,000</SelectItem>
-                <SelectItem value="20000">Above ₹20,000</SelectItem>
+                <SelectItem value="0-1000">Under ₹1,000</SelectItem>
+                <SelectItem value="1000-3000">₹1,000 - ₹3,000</SelectItem>
+                <SelectItem value="3000-5000">₹3,000 - ₹5,000</SelectItem>
+                <SelectItem value="5000">Above ₹5,000</SelectItem>
               </SelectContent>
             </Select>
 

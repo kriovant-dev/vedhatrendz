@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Heart, ShoppingBag, ArrowLeft, Share2, Truck, Shield, RotateCcw } from 'lucide-react';
+import { Heart, ShoppingBag, ArrowLeft, Share2, Truck, Shield, CreditCard } from 'lucide-react';
 import { firebase } from '@/integrations/firebase/client';
 import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
@@ -485,8 +485,8 @@ const ProductDetail = () => {
                     <span>Free Shipping</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <RotateCcw className="h-4 w-4 text-primary" />
-                    <span>Easy Returns</span>
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    <span>Secure Payment</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Shield className="h-4 w-4 text-primary" />

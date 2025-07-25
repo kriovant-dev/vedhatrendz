@@ -138,7 +138,7 @@ const HeroSection = () => {
             </h1>
 
             <p className="mobile-text sm:text-lg lg:text-xl text-muted-foreground mb-6 sm:mb-8 max-w-xl">
-              Discover our exquisite collection of handpicked sarees, where tradition meets contemporary fashion. Whether you are looking for a classical saree for a wedding, a vibrant cotton saree daily wear , or an intricate designer piece for a special occasion, we have something perfect for every moment and every personality.
+              Discover our exquisite collection of handpicked sarees, where tradition meets contemporary fashion. Whether you are looking for a vibrant saree for a wedding, stunning lehangas, daily wear and party wear kurtisets and traditional outfits for your little ones , we have something perfect for every moment and every personality.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">

@@ -34,10 +34,16 @@ const Navbar = () => {
   const cartCount = getTotalItems();
 
   const navigationItems = [
-    { label: 'Home', href: '/', icon: Home },
-    { label: 'Collections', href: '/sarees', icon: Grid3X3 },
-    { label: 'About', href: '/about', icon: Info },
-    { label: 'Contact', href: '/contact', icon: Phone },
+    // { label: 'Home', href: '/', icon: Home },
+    // { label: 'About', href: '/about', icon: Info },
+    // { label: 'Contact', href: '/contact', icon: Phone },
+    { label: 'Sarees', href: '/sarees', icon: Phone },
+    { label: 'Lehengas', href: '/sarees?category=Lehengas', icon: Phone },
+    { label: 'KurtiSets', href: '/sarees?category=Kurtiset', icon: Phone },
+    { label: 'Gowns', href: '/sarees?category=Gowns', icon: Phone },
+    { label: 'Kidswear', href: '/sarees?category=Kidswear', icon: Phone },
+    { label: 'Saree with Stitched Blouse', href: '/sarees?category=Stitched%20Blouse%20Sarees', icon: Phone },
+
   ];
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -68,10 +74,10 @@ const Navbar = () => {
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Logo */}
             <Link to="/" className="flex-shrink-0">
-              <h1 className="font-display text-xl sm:text-2xl font-bold gradient-primary bg-clip-text text-transparent">
+              <h1 className="font-display text-2xl sm:text-2xl font-bold gradient-primary bg-clip-text text-transparent">
                 VedhaTrendz
               </h1>
-              <p className="text-xs text-muted-foreground font-medium tracking-wide hidden sm:block">SAREE COLLECTION</p>
+              <p className="text-xs text-muted-foreground font-small tracking-wide hidden sm:block">HANDPICKED WITH PASSION</p>
             </Link>
 
             {/* Desktop Navigation */}
@@ -94,7 +100,7 @@ const Navbar = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   type="search"
-                  placeholder="Search sarees..."
+                  placeholder="Search Products / Code..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 w-48 xl:w-64 bg-muted/50 border-border focus:border-primary text-sm"
