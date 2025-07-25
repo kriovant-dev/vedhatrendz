@@ -145,7 +145,7 @@ const HeroSection = () => {
               <Button 
                 size="lg" 
                 className="gradient-primary text-primary-foreground hover:scale-105 transition-smooth shadow-elegant group mobile-button sm:px-6 sm:py-3"
-                onClick={() => navigate('/sarees')}
+                onClick={() => navigate('/products')}
               >
                 Explore Collection
                 <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-smooth" />

@@ -313,7 +313,7 @@ const FeaturedProducts = () => {
             size="lg" 
             variant="outline"
             className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-smooth"
-            onClick={() => navigate('/sarees')}
+            onClick={() => navigate('/products')}
           >
             View All Products
           </Button>

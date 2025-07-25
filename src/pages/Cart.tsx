@@ -42,7 +42,7 @@ const Cart: React.FC = () => {
               <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
               <p className="text-muted-foreground mb-6">Add some beautiful sarees to get started!</p>
-              <Link to="/sarees">
+              <Link to="/products">
                 <Button className="bg-saree-accent hover:bg-saree-accent/90">
                   Continue Shopping
                 </Button>
@@ -180,7 +180,7 @@ const Cart: React.FC = () => {
                 </Button>
 
                 <div className="text-center pt-4">
-                  <Link to="/sarees" className="text-sm text-saree-primary hover:underline">
+                  <Link to="/products" className="text-sm text-saree-primary hover:underline">
                     Continue Shopping
                   </Link>
                 </div>

@@ -232,7 +232,7 @@ const ProductDetail = () => {
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
             <p className="text-muted-foreground mb-6">The product you're looking for doesn't exist.</p>
-            <Button onClick={() => navigate('/sarees')}>
+            <Button onClick={() => navigate('/products')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Products
             </Button>
@@ -256,7 +256,7 @@ const ProductDetail = () => {
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
           <button onClick={() => navigate('/')} className="hover:text-primary">Home</button>
           <span>/</span>
-          <button onClick={() => navigate('/sarees')} className="hover:text-primary">Sarees</button>
+          <button onClick={() => navigate('/products')} className="hover:text-primary">Sarees</button>
           <span>/</span>
           <span className="text-foreground">{product.name}</span>
         </div>

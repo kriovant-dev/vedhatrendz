@@ -13,7 +13,7 @@ import Admin from "./pages/Admin";
 
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
-const Sarees = lazy(() => import("./pages/Sarees"));
+const Products = lazy(() => import("./pages/Products"));
 const ProductDetail = lazy(() => import("./pages/ProductDetail"));
 const ProductSearch = lazy(() => import("./components/ProductSearch"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -59,10 +59,10 @@ const App = () => (
               }
             />
             <Route
-              path="/sarees"
+              path="/products"
               element={
                 <Suspense fallback={<div>Loading...</div>}>
-                  <Sarees />
+                  <Products />
                 </Suspense>
               }
             />

@@ -488,7 +488,7 @@ const Orders: React.FC = () => {
               )}
               
               {orders.length === 0 && (
-                <Link to="/sarees">
+                <Link to="/products">
                   <Button>
                     Start Shopping
                   </Button>

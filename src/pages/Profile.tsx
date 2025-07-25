@@ -555,7 +555,7 @@ const Profile: React.FC = () => {
                     <Package className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">No Orders Yet</h3>
                     <p className="text-gray-500 mb-4">You haven't placed any orders yet.</p>
-                    <Link to="/sarees">
+                    <Link to="/products">
                       <Button className="bg-saree-accent hover:bg-saree-accent/90">
                         Start Shopping
                       </Button>
@@ -618,7 +618,7 @@ const Profile: React.FC = () => {
                     <Heart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">Your wishlist is empty</h3>
                     <p className="text-gray-500 mb-4">Save items you love to view them later</p>
-                    <Link to="/sarees">
+                    <Link to="/products">
                       <Button>
                         Start Shopping
                       </Button>

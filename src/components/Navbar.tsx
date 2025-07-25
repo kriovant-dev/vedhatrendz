@@ -43,12 +43,12 @@ const Navbar = () => {
     // { label: 'Home', href: '/', icon: Home },
     // { label: 'About', href: '/about', icon: Info },
     // { label: 'Contact', href: '/contact', icon: Phone },
-    { label: 'Sarees', href: '/sarees?category=Sarees', icon: Layers },
-    { label: 'Lehengas', href: '/sarees?category=Lehengas', icon: Sparkles },
-    { label: 'KurtiSets', href: '/sarees?category=Kurtiset', icon: Shirt },
-    { label: 'Gowns', href: '/sarees?category=Gowns', icon: Gem },
-    { label: 'Kidswear', href: '/sarees?category=Kidswear', icon: Baby },
-    { label: 'Saree with Stitched Blouse', href: '/sarees?category=Stitched%20Blouse%20Sarees', icon:  Scissors},
+    { label: 'Sarees', href: '/products?category=Sarees', icon: Layers },
+    { label: 'Lehengas', href: '/products?category=Lehengas', icon: Sparkles },
+    { label: 'KurtiSets', href: '/products?category=Kurtiset', icon: Shirt },
+    { label: 'Gowns', href: '/products?category=Gowns', icon: Gem },
+    { label: 'Kidswear', href: '/products?category=Kidswear', icon: Baby },
+    { label: 'Saree with Stitched Blouse', href: '/products?category=Stitched%20Blouse%20Sarees', icon:  Scissors},
 
   ];
 

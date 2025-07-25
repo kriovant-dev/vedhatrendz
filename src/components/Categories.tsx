@@ -50,7 +50,7 @@ const Categories = () => {
   const handleCategoryClick = (category: any) => {
     // Create a URL-friendly slug for navigation
     const categorySlug = category.slug || category.name.toLowerCase().replace(/\s+/g, '-');
-    navigate(`/sarees?category=${encodeURIComponent(category.name)}`);
+    navigate(`/products?category=${encodeURIComponent(category.name)}`);
   };
 
   // Get appropriate icon for category
@@ -220,13 +220,13 @@ const Categories = () => {
         <div className="mt-16 animate-fade-up">
           <Card 
             className="border-saree-gold/30 bg-gradient-gold overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.99]"
-            onClick={() => navigate('/sarees?sort=newest')}
+            onClick={() => navigate('/products?sort=newest')}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                navigate('/sarees?sort=newest');
+                navigate('/products?sort=newest');
               }
             }}
             aria-label="Browse new arrivals collection"

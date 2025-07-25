@@ -18,7 +18,7 @@ export class SearchService {
     if (!trimmedQuery) {
       return {
         type: 'search',
-        redirectUrl: '/sarees'
+        redirectUrl: '/products'
       };
     }
 
@@ -65,7 +65,7 @@ export class SearchService {
     console.log('🔍 No product found by code, treating as text search');
     return {
       type: 'search',
-      redirectUrl: `/sarees?search=${encodeURIComponent(trimmedQuery)}`
+      redirectUrl: `/products?search=${encodeURIComponent(trimmedQuery)}`
     };
   }
 

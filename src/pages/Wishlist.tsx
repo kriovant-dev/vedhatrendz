@@ -45,7 +45,7 @@ const Wishlist: React.FC = () => {
           <Heart className="mx-auto h-16 w-16 text-gray-300 mb-4" />
           <h1 className="text-3xl font-bold text-saree-primary mb-2">Your Wishlist</h1>
           <p className="text-gray-600 mb-6">You haven't added any items to your wishlist yet.</p>
-          <Link to="/sarees">
+          <Link to="/products">
             <Button className="bg-saree-accent hover:bg-saree-accent/90">
               Continue Shopping
             </Button>

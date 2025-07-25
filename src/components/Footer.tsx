@@ -85,10 +85,10 @@ const Footer = () => {
     {
       title: "Shop & Discover",
       links: [
-        { label: "All Sarees", href: "/sarees" },
+        { label: "All Products", href: "/products" },
         ...categories.slice(0, 6).map(category => ({
           label: category.name,
-          href: `/sarees?category=${encodeURIComponent(category.name)}`
+          href: `/products?category=${encodeURIComponent(category.name)}`
         }))
       ]
     },
