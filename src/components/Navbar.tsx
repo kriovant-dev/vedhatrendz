@@ -11,7 +11,13 @@ import {
   Home,
   Grid3X3,
   Info,
-  Phone
+  Phone,
+  Layers,
+  Sparkles,
+  Shirt,
+  Baby,
+  Scissors,
+  Gem
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
@@ -37,12 +43,12 @@ const Navbar = () => {
     // { label: 'Home', href: '/', icon: Home },
     // { label: 'About', href: '/about', icon: Info },
     // { label: 'Contact', href: '/contact', icon: Phone },
-    { label: 'Sarees', href: '/sarees?category=Sarees', icon: Phone },
-    { label: 'Lehengas', href: '/sarees?category=Lehengas', icon: Phone },
-    { label: 'KurtiSets', href: '/sarees?category=Kurtiset', icon: Phone },
-    { label: 'Gowns', href: '/sarees?category=Gowns', icon: Phone },
-    { label: 'Kidswear', href: '/sarees?category=Kidswear', icon: Phone },
-    { label: 'Saree with Stitched Blouse', href: '/sarees?category=Stitched%20Blouse%20Sarees', icon: Phone },
+    { label: 'Sarees', href: '/sarees?category=Sarees', icon: Layers },
+    { label: 'Lehengas', href: '/sarees?category=Lehengas', icon: Sparkles },
+    { label: 'KurtiSets', href: '/sarees?category=Kurtiset', icon: Shirt },
+    { label: 'Gowns', href: '/sarees?category=Gowns', icon: Gem },
+    { label: 'Kidswear', href: '/sarees?category=Kidswear', icon: Baby },
+    { label: 'Saree with Stitched Blouse', href: '/sarees?category=Stitched%20Blouse%20Sarees', icon:  Scissors},
 
   ];
 
