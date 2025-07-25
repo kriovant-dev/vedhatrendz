@@ -37,7 +37,7 @@ const About = () => {
   const features = [
     { icon: Shield, text: 'Secure Payments' },
     { icon: Star, text: '4.8/5 Customer Rating' },
-    { icon: Truck, text: 'Free Shipping Above ₹2000' },
+    { icon: Truck, text: 'Free Shipping all over India' },
     { icon: Award, text: 'Premium Quality Guarantee' }
   ];
 
@@ -103,7 +103,7 @@ const About = () => {
               <div className="absolute -bottom-6 -left-6 bg-card p-6 rounded-xl shadow-soft border">
                 <div className="flex items-center space-x-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">5000+</div>
+                    <div className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">1000+</div>
                     <div className="text-sm text-muted-foreground">Happy Customers</div>
                   </div>
                   <div className="w-px h-12 bg-border"></div>

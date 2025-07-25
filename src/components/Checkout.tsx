@@ -85,9 +85,9 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
   };
 
   const totalPrice = getCheckoutTotal();
-  const shippingFee = 5000; // ₹50 shipping (5000 paise = ₹50)
-  const taxAmount = Math.round(totalPrice * 0.18); // 18% GST (already in paise)
-  const finalTotal = totalPrice + shippingFee + taxAmount;
+  const shippingFee = 0; // Free shipping
+  // const taxAmount = Math.round(totalPrice * 0.18); // 18% GST (already in paise)
+  const finalTotal = totalPrice + shippingFee;
 
   // Function to save user profile for future autofill
   const saveUserProfile = async () => {
@@ -252,7 +252,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         },
         subtotal: totalPrice,
         shipping_cost: shippingFee,
-        tax_amount: taxAmount,
         total_amount: finalTotal,
         total: finalTotal, // Add total field for OrderService compatibility
         payment_method: 'cod',
@@ -349,7 +348,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
   const renderAuthStep = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <Phone className="mx-auto h-12 w-12 text-primary mb-4" />
+        <User className="mx-auto h-12 w-12 text-primary mb-4" />
         <h3 className="text-lg font-semibold mb-2">Secure Checkout</h3>
         <p className="text-muted-foreground">
           Please Signin with your account to continue with your order
@@ -366,12 +365,8 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
             <span>{formatPrice(totalPrice)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span>Shipping</span>
+            <span>Shipping (Free)</span>
             <span>{formatPrice(shippingFee)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span>Tax (GST 18%)</span>
-            <span>{formatPrice(taxAmount)}</span>
           </div>
           <Separator />
           <div className="flex justify-between font-semibold">
@@ -555,12 +550,8 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
                   <span>{formatPrice(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>{formatPrice(shippingFee)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax (GST 18%)</span>
-                  <span>{formatPrice(taxAmount)}</span>
+                  <span>Shipping (Free)</span>
+                  <span>{formatPrice(shippingFee)} </span>
                 </div>
                 <div className="flex justify-between font-semibold">
                   <span>Total</span>
