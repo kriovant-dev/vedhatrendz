@@ -278,7 +278,7 @@ const Sarees = () => {
         
         {/* Page Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="font-display mobile-heading font-bold gradient-primary bg-clip-text text-transparent mb-4 leading-normal">
+          <h1 className="font-display mobile-heading font-bold gradient-primary bg-clip-text text-transparent mb-2 leading-normal">
             One stop destination for your fashion needs
           </h1>
           <p className="text-muted-foreground mobile-text">
