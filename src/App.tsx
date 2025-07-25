@@ -51,7 +51,7 @@ const App = () => (
               }
             />
             <Route
-              path="/contact"
+              path="/contact-us"
               element={
                 <Suspense fallback={<div>Loading...</div>}>
                   <Contact />
