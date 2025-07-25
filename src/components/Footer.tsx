@@ -95,7 +95,7 @@ const Footer = () => {
     {
       title: "Customer Support",
       links: [
-        { label: "Contact Us", href: "/contact" },
+        { label: "Contact Us", href: "/contact-us" },
         { label: "FAQ", href: "/faq" },
         { label: "Track Your Order", href: "/orders" },
         { label: "About Us", href: "/about" },
