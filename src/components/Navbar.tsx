@@ -77,8 +77,11 @@ const Navbar = () => {
               <h1 className="font-display text-2xl sm:text-2xl font-bold gradient-primary bg-clip-text text-transparent">
                 VedhaTrendz
               </h1>
-              <p className="text-xs text-muted-foreground font-small tracking-wide hidden sm:block">HANDPICKED WITH PASSION</p>
+              <p className="text-[10px] text-muted-foreground font-medium tracking-wide hidden sm:block">
+                HANDPICKED WITH PASSION
+              </p>
             </Link>
+
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
