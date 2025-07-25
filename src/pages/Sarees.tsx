@@ -41,24 +41,6 @@ const Sarees = () => {
   const [priceRange, setPriceRange] = useState('all');
   const [sortBy, setSortBy] = useState('featured');
 
-  // Handle URL parameters on component mount and when searchParams change
-  useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    const searchParam = searchParams.get('search');
-    
-    if (categoryParam) {
-      console.log('Category param from URL:', categoryParam);
-      setSelectedCategory(categoryParam);
-    }
-    
-    if (searchParam) {
-      setSearchQuery(searchParam);
-    }
-
-    // Scroll to top when parameters change (especially for category navigation)
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [searchParams]);
-
   // Scroll to top on initial page load
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -112,6 +94,45 @@ const Sarees = () => {
       return data;
     },
   });
+
+  // Handle URL parameters on component mount and when searchParams change
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
+    
+    if (categoryParam) {
+      console.log('Category param from URL:', categoryParam);
+      
+      // Wait for categories to load before setting the selected category
+      if (categories.length > 0) {
+        // Find the category that matches either name or slug
+        const matchingCategory = categories.find(cat => 
+          cat.name === categoryParam || 
+          cat.slug === categoryParam ||
+          cat.name.toLowerCase() === categoryParam.toLowerCase() ||
+          cat.slug?.toLowerCase() === categoryParam.toLowerCase()
+        );
+        
+        if (matchingCategory) {
+          console.log('Found matching category:', matchingCategory);
+          setSelectedCategory(matchingCategory.name); // Use the exact name from the database
+        } else {
+          console.log('No matching category found, using param as-is:', categoryParam);
+          setSelectedCategory(categoryParam);
+        }
+      } else {
+        // If categories haven't loaded yet, set the param directly
+        setSelectedCategory(categoryParam);
+      }
+    }
+    
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+
+    // Scroll to top when parameters change (especially for category navigation)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [searchParams, categories]); // Added categories as dependency
 
   // Filter and sort products
   const filteredProducts = React.useMemo(() => {

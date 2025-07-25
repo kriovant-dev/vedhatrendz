@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { ShoppingBag, MapPin, User, Phone, CreditCard, Check } from 'lucide-react';
+import { ShoppingBag, MapPin, User, Phone, CreditCard, Check,  } from 'lucide-react';
 import { useCart, CartItem } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import EmailAuth from './EmailAuth';
@@ -352,7 +352,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         <Phone className="mx-auto h-12 w-12 text-primary mb-4" />
         <h3 className="text-lg font-semibold mb-2">Secure Checkout</h3>
         <p className="text-muted-foreground">
-          Please verify your phone number to continue with your order
+          Please Signin with your account to continue with your order
         </p>
       </div>
 
