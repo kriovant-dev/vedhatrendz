@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight } from 'lucide-react';
 import { CategoryService } from '@/services/categoryService';
-import { seedDefaultCategories } from '@/utils/seedCategories';
+// import { seedDefaultCategories } from '@/utils/seedCategories';
 
 const Categories = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ const Categories = () => {
       // If no categories found, seed default ones
       if (categories.length === 0) {
         console.log('🌱 No categories found, seeding default categories...');
-        return await seedDefaultCategories();
+        // return await seedDefaultCategories();
       }
       
       return categories;
