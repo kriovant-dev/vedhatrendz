@@ -7,13 +7,20 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { ShoppingBag, MapPin, User, Phone, CreditCard, Check,  } from 'lucide-react';
+import { ShoppingBag, MapPin, User, Phone, CreditCard, Check, Shield } from 'lucide-react';
 import { useCart, CartItem } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import EmailAuth from './EmailAuth';
 import { toast } from 'sonner';
 import { FirebaseClient } from '@/integrations/firebase/client';
 import { emailService } from '@/services/emailService';
+
+// Razorpay types
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface CheckoutProps {
   isOpen: boolean;
@@ -47,6 +54,19 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
   const [showEmailAuth, setShowEmailAuth] = useState(false);
   const [step, setStep] = useState<'auth' | 'details' | 'payment' | 'confirmation'>('auth');
   const [loading, setLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   // Determine which items to use: buyNowItem for "Buy Now" or cart items for regular checkout
   const checkoutItems = buyNowItem ? [buyNowItem] : items;
@@ -180,15 +200,19 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
   const handleShippingSubmit = () => {
     const { fullName, email, phone, address, city, state, pincode } = shippingDetails;
     
-    if (!fullName || !email || !phone || !address || !city || !state || !pincode) {
-      toast.error('Please fill in all required shipping details');
+    // Comprehensive validation
+    if (!fullName?.trim()) {
+      toast.error('Please enter your full name');
       return;
     }
 
-    // Validate phone number (basic validation)
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(phone)) {
-      toast.error('Please enter a valid 10-digit phone number');
+    if (fullName.trim().length < 2) {
+      toast.error('Full name must be at least 2 characters long');
+      return;
+    }
+
+    if (!email?.trim()) {
+      toast.error('Please enter your email address');
       return;
     }
 
@@ -196,35 +220,153 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
       toast.error('Please enter a valid email address');
       return;
     }
-    
-    if (pincode.length !== 6) {
+
+    if (!phone?.trim()) {
+      toast.error('Please enter your phone number');
+      return;
+    }
+
+    // Validate Indian phone number
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone.replace(/\D/g, ''))) {
+      toast.error('Please enter a valid 10-digit Indian phone number starting with 6, 7, 8, or 9');
+      return;
+    }
+
+    if (!address?.trim()) {
+      toast.error('Please enter your address');
+      return;
+    }
+
+    if (address.trim().length < 10) {
+      toast.error('Please enter a complete address (minimum 10 characters)');
+      return;
+    }
+
+    if (!city?.trim()) {
+      toast.error('Please enter your city');
+      return;
+    }
+
+    if (!state?.trim()) {
+      toast.error('Please enter your state');
+      return;
+    }
+
+    if (!pincode?.trim()) {
+      toast.error('Please enter your pincode');
+      return;
+    }
+
+    if (!/^\d{6}$/.test(pincode.trim())) {
       toast.error('Please enter a valid 6-digit pincode');
+      return;
+    }
+    
+    // Additional pincode validation (basic Indian pincode check)
+    const pin = parseInt(pincode.trim());
+    if (pin < 100000 || pin > 999999) {
+      toast.error('Please enter a valid Indian pincode');
       return;
     }
     
     setStep('payment');
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePayment = async () => {
     if (!user) {
       toast.error('Please sign in to place an order');
       return;
     }
 
-    setLoading(true);
-    
+    // Validate checkout items
+    if (!checkoutItems || checkoutItems.length === 0) {
+      toast.error('No items in cart. Please add items before checkout.');
+      return;
+    }
+
+    // Validate total amount
+    if (finalTotal <= 0) {
+      toast.error('Invalid order total. Please refresh and try again.');
+      return;
+    }
+
+    // Validate Razorpay is loaded
+    if (!window.Razorpay) {
+      toast.error('Payment gateway not loaded. Please refresh and try again.');
+      return;
+    }
+
+    // Validate shipping details one more time before payment
+    const { fullName, email, phone, address, city, state, pincode } = shippingDetails;
+    if (!fullName?.trim() || !email?.trim() || !phone?.trim() || !address?.trim() || !city?.trim() || !state?.trim() || !pincode?.trim()) {
+      toast.error('Shipping details are incomplete. Please go back and fill all required fields.');
+      setStep('details');
+      return;
+    }
+
+    setPaymentLoading(true);
+
     try {
       // Save user profile for future autofill
       await saveUserProfile();
 
+      // Generate order number
+      const orderNumber = `VT${Date.now().toString().slice(-6)}`;
+
+      // Razorpay configuration
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YourTestKeyHere', // You'll need to add this to env
+        amount: finalTotal, // Amount in paise (already in paise)
+        currency: 'INR',
+        name: 'VedhaTrendz',
+        description: `Order #${orderNumber}`,
+        order_id: '', // This should come from backend, for now we'll use client-side
+        prefill: {
+          name: shippingDetails.fullName,
+          email: shippingDetails.email,
+          contact: shippingDetails.phone,
+        },
+        theme: {
+          color: '#8B5A3C',
+        },
+        modal: {
+          escape: false,
+          ondismiss: () => {
+            setPaymentLoading(false);
+            toast.error('Payment cancelled');
+          }
+        },
+        handler: async (response: any) => {
+          console.log('💳 Payment successful:', response);
+          await handleOrderCreation(response.razorpay_payment_id, orderNumber);
+        },
+        notes: {
+          address: `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} - ${shippingDetails.pincode}`,
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+
+    } catch (error) {
+      console.error('Payment initialization error:', error);
+      toast.error('Failed to initialize payment. Please try again.');
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleOrderCreation = async (paymentId: string, orderNumber: string) => {
+    try {
       // Create order in Firebase with proper structure matching the database
       const orderData = {
-        customer_name: user.displayName || shippingDetails.fullName || 'Customer',
-        customer_email: shippingDetails.email || user.email || '',
+        order_number: orderNumber,
+        customer_name: user?.displayName || shippingDetails.fullName || 'Customer',
+        customer_email: shippingDetails.email || user?.email || '',
         customer_phone: shippingDetails.phone,
-        user_phone: shippingDetails.phone, // Add this field for OrderService compatibility
-        user_email: user.email || '', // Add user_email for OrderService compatibility
-        user_id: user.uid, // Add user_id for better tracking
+        user_phone: shippingDetails.phone,
+        user_email: user?.email || '',
+        user_id: user?.uid,
         order_items: checkoutItems.map(item => ({
           id: item.productId,
           name: item.name,
@@ -233,7 +375,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           size: item.size,
           quantity: item.quantity
         })),
-        items: checkoutItems.map(item => ({ // Add items field for OrderService compatibility
+        items: checkoutItems.map(item => ({
           productId: item.productId,
           name: item.name,
           price: item.price,
@@ -253,10 +395,11 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         subtotal: totalPrice,
         shipping_cost: shippingFee,
         total_amount: finalTotal,
-        total: finalTotal, // Add total field for OrderService compatibility
-        payment_method: 'cod',
-        payment_status: 'pending',
-        status: 'pending',
+        total: finalTotal,
+        payment_method: 'razorpay',
+        payment_status: 'completed',
+        payment_id: paymentId,
+        status: 'confirmed',
         shipping_provider: 'delhivery',
         tracking_number: '',
         notes: shippingDetails.landmark || '',
@@ -271,12 +414,8 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         throw new Error('Failed to create order');
       }
 
-      // Generate order number for email
-      const orderNumber = `VT${Date.now().toString().slice(-6)}`;
-      
       // Send email notifications
       try {
-        // Prepare email data
         const emailData = {
           orderNumber,
           customerName: orderData.customer_name,
@@ -284,7 +423,8 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           customerPhone: orderData.customer_phone,
           items: orderData.order_items,
           totalAmount: orderData.total_amount,
-          shippingAddress: orderData.shipping_address
+          shippingAddress: orderData.shipping_address,
+          paymentId
         };
 
         // Send admin notification email
@@ -292,8 +432,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         const adminEmailSent = await emailService.sendOrderNotificationToAdmin(emailData);
         if (adminEmailSent) {
           console.log('✅ Admin notification email sent successfully');
-        } else {
-          console.log('⚠️ Admin notification email failed');
         }
 
         // Send customer confirmation email
@@ -302,31 +440,26 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           const customerEmailSent = await emailService.sendOrderConfirmationToCustomer(emailData);
           if (customerEmailSent) {
             console.log('✅ Customer confirmation email sent successfully');
-            toast.success('Order placed! Check your email for confirmation.');
-          } else {
-            console.log('⚠️ Customer confirmation email failed');
-            toast.success('Order placed successfully!');
           }
-        } else {
-          toast.success('Order placed successfully!');
         }
       } catch (emailError) {
-        console.error('Email sending failed:', emailError);
+        console.error('Email notification error:', emailError);
         // Don't fail the order if email fails
-        toast.success('Order placed successfully! (Email notification pending)');
       }
 
-      // Clear cart only if it's not a "Buy Now" purchase
+      // Clear cart only if it's not a "Buy Now" order
       if (!buyNowItem) {
         clearCart();
       }
+
+      toast.success('Order placed successfully! Payment completed.');
       setStep('confirmation');
-      
+
     } catch (error) {
-      console.error('Error placing order:', error);
-      toast.error('Failed to place order. Please try again.');
+      console.error('Order creation error:', error);
+      toast.error('Order creation failed. Please contact support with your payment ID: ' + paymentId);
     } finally {
-      setLoading(false);
+      setPaymentLoading(false);
     }
   };
 
@@ -563,16 +696,30 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
 
           <Card>
             <CardContent className="pt-6">
-              <div className="space-y-3">
-                <h4 className="font-medium">Payment Method</h4>
-                <div className="p-3 border-2 border-primary rounded-lg bg-primary/5">
+              <div className="space-y-4">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  Secure Payment
+                </h4>
+                <div className="p-4 border-2 border-primary rounded-lg bg-primary/5">
                   <div className="flex items-center gap-3">
                     <CreditCard className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="font-medium">Cash on Delivery (COD)</p>
-                      <p className="text-sm text-muted-foreground">Pay when your order arrives</p>
+                      <p className="font-medium">Razorpay Secure Payment</p>
+                      <p className="text-sm text-muted-foreground">
+                        Pay securely using Cards, UPI, Net Banking, or Wallets
+                      </p>
                     </div>
                   </div>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Shield className="h-3 w-3" />
+                    <span>256-bit SSL encrypted • PCI DSS compliant</span>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                  <p className="font-medium mb-1">Accepted Payment Methods:</p>
+                  <p>💳 Visa, Mastercard, RuPay • 📱 UPI, PhonePe, Google Pay • 🏦 Net Banking • 💰 Wallets</p>
                 </div>
               </div>
             </CardContent>
@@ -584,8 +731,22 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         <Button variant="outline" onClick={() => setStep('details')} className="flex-1">
           Back
         </Button>
-        <Button onClick={handlePlaceOrder} disabled={loading} className="flex-1">
-          {loading ? 'Placing Order...' : 'Place Order'}
+        <Button 
+          onClick={handlePayment} 
+          disabled={paymentLoading} 
+          className="flex-1 bg-primary hover:bg-primary/90"
+        >
+          {paymentLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Processing...
+            </>
+          ) : (
+            <>
+              <Shield className="h-4 w-4 mr-2" />
+              Pay Securely
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -598,10 +759,17 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
       </div>
       
       <div>
-        <h3 className="text-lg font-semibold mb-2">Order Placed Successfully!</h3>
+        <h3 className="text-lg font-semibold mb-2">Payment Successful!</h3>
         <p className="text-muted-foreground">
-          Thank you for your order. We'll send you updates via SMS.
+          Your order has been confirmed and payment is completed. We'll send you updates via email and SMS.
         </p>
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-sm text-green-800">
+            <strong>Order Status:</strong> Confirmed<br />
+            <strong>Payment Status:</strong> Completed<br />
+            <strong>Next Step:</strong> Order processing & shipping
+          </p>
+        </div>
       </div>
 
       <Card>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -15,7 +16,10 @@ import {
   Heart,
   CreditCard,
   Shield,
-  Truck
+  Truck,
+  Code,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 import { newsletterService } from '@/services/newsletterService';
 import { CategoryService } from '@/services/categoryService';
@@ -24,7 +28,31 @@ import { useToast } from '@/hooks/use-toast';
 const Footer = () => {
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isVisitingCardOpen, setIsVisitingCardOpen] = useState(false);
   const { toast } = useToast();
+
+  // Developer information
+  const developerInfo = {
+    name: "Chanakya Devendra Chukka",
+    email: "chanakyadevendrachukka@gmail.com",
+    phone: "+91 XXXXXXXXXX" // Replace with your actual phone number
+  };
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: `${label} copied to clipboard`,
+      });
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Please copy manually",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Fetch categories from database
   const { data: categories = [] } = useQuery({
@@ -291,6 +319,119 @@ const Footer = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+
+      <Separator className="bg-primary-foreground/10" />
+      
+      {/* Developer Credit Banner */}
+      <div className="bg-gradient-to-r from-saree-burgundy/20 to-saree-gold/20 border-t border-primary-foreground/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex justify-center items-center gap-2 text-sm">
+            <Code className="h-4 w-4 text-primary-foreground/70" />
+            <span className="text-primary-foreground/70">This website is made by</span>
+            <Dialog open={isVisitingCardOpen} onOpenChange={setIsVisitingCardOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="link" 
+                  className="h-auto p-0 text-saree-gold hover:text-saree-gold/80 font-semibold underline"
+                >
+                  Dev
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Code className="h-5 w-5 text-primary" />
+                    Developer Contact
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <div className="space-y-6">
+                  {/* Profile Header */}
+                  <div className="text-center">
+                    <div className="w-20 h-20 bg-gradient-to-br from-saree-burgundy to-saree-gold rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-2xl font-bold text-white">
+                        {developerInfo.name.split(' ').map(n => n[0]).join('')}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-semibold">{developerInfo.name}</h3>
+                    <p className="text-sm text-muted-foreground">Full Stack Developer</p>
+                  </div>
+
+                  {/* Contact Information */}
+                  <div className="space-y-3">
+                    {/* Email */}
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Mail className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">Email</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{developerInfo.email}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(developerInfo.email, "Email")}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Phone */}
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">Phone</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{developerInfo.phone}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyToClipboard(developerInfo.phone, "Phone")}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`mailto:${developerInfo.email}`, '_blank')}
+                      className="flex items-center gap-2"
+                    >
+                      <Mail className="h-4 w-4" />
+                      Email
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`tel:${developerInfo.phone}`, '_blank')}
+                      className="flex items-center gap-2"
+                    >
+                      <Phone className="h-4 w-4" />
+                      Call
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </div>
+
+                  {/* Footer Note */}
+                  <div className="text-center text-xs text-muted-foreground border-t pt-3">
+                    Thank you for visiting VedhaTrendz! 🙏
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
