@@ -34,7 +34,7 @@ const Footer = () => {
   // Developer information
   const developerInfo = {
     name: "Dev",
-    email: "dev.freelance.x@gmail.com",
+    email: "builtbydevx@gmail.com",
     phone: "+91 XXXXXXXXXX" // Replace with your actual phone number
   };
 
