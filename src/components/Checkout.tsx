@@ -146,10 +146,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           created_at: new Date().toISOString()
         });
       }
-      
-      console.log('User profile saved successfully');
     } catch (error) {
-      console.error('Error saving user profile:', error);
       // Don't throw error here as it shouldn't block order placement
     }
   };
@@ -186,7 +183,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         }));
       }
     } catch (error) {
-      console.error('Error loading user profile:', error);
       // Fallback to basic user info from Firebase
       setShippingDetails(prev => ({
         ...prev,
@@ -314,14 +310,35 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
       // Generate order number
       const orderNumber = `VT${Date.now().toString().slice(-6)}`;
 
+      // Create Razorpay order on backend for security
+      const response = await fetch('/api/create-razorpay-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalTotal,
+          currency: 'INR',
+          receipt: orderNumber,
+          notes: {
+            name: shippingDetails.fullName,
+            email: shippingDetails.email,
+            phone: shippingDetails.phone,
+            address: `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} - ${shippingDetails.pincode}`
+          }
+        })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.order || !data.order.id) {
+        throw new Error(data.error || 'Failed to create payment order');
+      }
+
       // Razorpay configuration
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YourTestKeyHere', // You'll need to add this to env
-        amount: finalTotal, // Amount in paise (already in paise)
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YourTestKeyHere',
+        amount: finalTotal,
         currency: 'INR',
         name: 'VedhaTrendz',
         description: `Order #${orderNumber}`,
-        order_id: '', // This should come from backend, for now we'll use client-side
+        order_id: data.order.id, // Secure order id from backend
         prefill: {
           name: shippingDetails.fullName,
           email: shippingDetails.email,
@@ -338,7 +355,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           }
         },
         handler: async (response: any) => {
-          console.log('💳 Payment successful:', response);
           await handleOrderCreation(response.razorpay_payment_id, orderNumber);
         },
         notes: {
@@ -350,7 +366,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
       razorpay.open();
 
     } catch (error) {
-      console.error('Payment initialization error:', error);
       toast.error('Failed to initialize payment. Please try again.');
       setPaymentLoading(false);
     }
@@ -428,22 +443,13 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         };
 
         // Send admin notification email
-        console.log('📧 Sending admin notification email...');
         const adminEmailSent = await emailService.sendOrderNotificationToAdmin(emailData);
-        if (adminEmailSent) {
-          console.log('✅ Admin notification email sent successfully');
-        }
 
         // Send customer confirmation email
         if (orderData.customer_email) {
-          console.log('📧 Sending customer confirmation email...');
           const customerEmailSent = await emailService.sendOrderConfirmationToCustomer(emailData);
-          if (customerEmailSent) {
-            console.log('✅ Customer confirmation email sent successfully');
-          }
         }
       } catch (emailError) {
-        console.error('Email notification error:', emailError);
         // Don't fail the order if email fails
       }
 
@@ -456,7 +462,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
       setStep('confirmation');
 
     } catch (error) {
-      console.error('Order creation error:', error);
       toast.error('Order creation failed. Please contact support with your payment ID: ' + paymentId);
     } finally {
       setPaymentLoading(false);

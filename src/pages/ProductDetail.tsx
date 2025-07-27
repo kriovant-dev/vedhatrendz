@@ -115,12 +115,6 @@ const ProductDetail = () => {
     });
     
     toast.success(`Added ${quantity} item(s) to cart!`);
-    console.log('Added to cart:', {
-      productId: id,
-      color: selectedColor,
-      size: selectedSize,
-      quantity
-    });
   };
 
   const handleBuyNow = () => {
@@ -172,7 +166,6 @@ const ProductDetail = () => {
         toast.success('Shared successfully!');
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error);
           fallbackShare();
         }
       }

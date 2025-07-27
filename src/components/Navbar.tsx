@@ -66,7 +66,6 @@ const Navbar = () => {
           window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
         }
       } catch (error) {
-        console.error('Search error:', error);
         // Fall back to search page on error
         window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
       }

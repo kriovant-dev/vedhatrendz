@@ -33,8 +33,8 @@ const Footer = () => {
 
   // Developer information
   const developerInfo = {
-    name: "Chanakya Devendra Chukka",
-    email: "chanakyadevendrachukka@gmail.com",
+    name: "Dev",
+    email: "dev.freelance.x@gmail.com",
     phone: "+91 XXXXXXXXXX" // Replace with your actual phone number
   };
 

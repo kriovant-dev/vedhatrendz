@@ -16,7 +16,6 @@ const Categories = () => {
       
       // If no categories found, seed default ones
       if (categories.length === 0) {
-        console.log('🌱 No categories found, seeding default categories...');
         // return await seedDefaultCategories();
       }
       
@@ -36,15 +35,6 @@ const Categories = () => {
 
   // Use database categories if available, otherwise use defaults
   const displayCategories = categories.length > 0 ? categories : defaultCategories;
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('📋 Categories Debug Info:');
-    console.log(`- Database categories count: ${categories.length}`);
-    console.log(`- Display categories count: ${displayCategories.length}`);
-    console.log('- Categories data:', categories);
-    console.log('- Display categories:', displayCategories);
-  }, [categories, displayCategories]);
 
   // Handle category click - navigate to sarees page with category filter
   const handleCategoryClick = (category: any) => {

@@ -11,7 +11,7 @@ import { User, Phone, Mail, MapPin, Package, Heart, ShoppingCart, Edit2, Save, X
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
 import { FirebaseClient } from '../integrations/firebase/client';
-import { OrderService } from '../services/orderService';
+import { OrderService, Order } from '../services/orderService';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -25,16 +25,6 @@ interface UserProfile {
     state: string;
     pincode: string;
   };
-}
-
-interface Order {
-  id: string;
-  items: any[];
-  total: number;
-  status: string;
-  created_at: string;
-  user_phone: string;
-  shipping_address?: any;
 }
 
 const Profile: React.FC = () => {
@@ -130,22 +120,20 @@ const Profile: React.FC = () => {
                   
                   try {
                     await FirebaseClient.add('user_profiles', profileData);
-                    console.log('Profile auto-filled from order history');
                   } catch (error) {
-                    console.error('Error auto-saving profile:', error);
+                    // Error auto-saving profile
                   }
                 }
               }
             }
           } catch (orderError) {
-            console.error('Error fetching orders for auto-fill:', orderError);
+            // Error fetching orders for auto-fill
           }
         }
         
         setProfile(defaultProfile);
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
       // Set phone number from auth user as fallback
       setProfile(prev => ({
         ...prev,
@@ -158,13 +146,44 @@ const Profile: React.FC = () => {
 
   const loadUserOrders = async () => {
     try {
-      const { data } = await FirebaseClient.getWhere('orders', [
-        { field: 'user_phone', operator: '==', value: user?.phoneNumber }
-      ]);
+      const userEmail = user?.email;
       
-      setOrders(data || []);
+      if (userEmail) {
+        // First try to get orders using the OrderService (same as Orders page)
+        const { orders: userOrders, error } = await OrderService.getOrdersByUser(userEmail);
+        
+        if (error) {
+          // Fallback: try direct Firebase query with customer_email
+          try {
+            const { data: fallbackOrders } = await FirebaseClient.getWhere('orders', [
+              { field: 'customer_email', operator: '==', value: userEmail }
+            ]);
+            
+            if (fallbackOrders && fallbackOrders.length > 0) {
+              const convertedOrders = fallbackOrders.map(order => ({
+                id: order.id,
+                items: order.items || order.order_items || [],
+                total: order.total || order.total_amount || 0,
+                status: order.status || 'pending',
+                created_at: order.created_at,
+                user_phone: order.user_phone || order.customer_phone || '',
+                shipping_address: order.shipping_address
+              }));
+              setOrders(convertedOrders);
+            } else {
+              setOrders([]);
+            }
+          } catch (fallbackError) {
+            setOrders([]);
+          }
+        } else {
+          setOrders(userOrders || []);
+        }
+      } else {
+        setOrders([]);
+      }
     } catch (error) {
-      console.error('Error loading orders:', error);
+      setOrders([]);
     }
   };
 
@@ -196,7 +215,7 @@ const Profile: React.FC = () => {
 
       setIsEditing(false);
     } catch (error) {
-      console.error('Error saving profile:', error);
+      // Error saving profile
     }
   };
 
@@ -204,21 +223,28 @@ const Profile: React.FC = () => {
     try {
       // This is for future orders - we won't modify existing orders
       // but we can set this as default for checkout
-      console.log('Profile saved - will be used as default for future orders');
     } catch (error) {
-      console.error('Error updating future orders:', error);
+      // Error updating future orders
     }
   };
 
   const autoFillFromOrders = async () => {
     setIsAutoFilling(true);
     try {
-      const phoneNumber = user?.phoneNumber;
-      if (!phoneNumber) return;
+      const userEmail = user?.email;
+      if (!userEmail) return;
 
-      const { data: orderData } = await FirebaseClient.getWhere('orders', [
-        { field: 'user_phone', operator: '==', value: phoneNumber }
-      ]);
+      // Try to get orders using email (same logic as loadUserOrders)
+      const { orders: userOrders, error } = await OrderService.getOrdersByUser(userEmail);
+      let orderData = userOrders;
+      
+      if (error || !orderData || orderData.length === 0) {
+        // Fallback: try direct Firebase query with customer_email
+        const { data: fallbackOrders } = await FirebaseClient.getWhere('orders', [
+          { field: 'customer_email', operator: '==', value: userEmail }
+        ]);
+        orderData = fallbackOrders || [];
+      }
       
       if (orderData && orderData.length > 0) {
         // Get the most recent order with shipping address
@@ -234,7 +260,8 @@ const Profile: React.FC = () => {
             setProfile(prev => ({
               ...prev,
               name: latestOrder.shipping_address.name || prev.name,
-              email: latestOrder.shipping_address.email || prev.email,
+              email: latestOrder.user_email || prev.email,
+              phone: latestOrder.shipping_address.phone || latestOrder.user_phone || prev.phone,
               address: {
                 street: latestOrder.shipping_address.street || prev.address.street,
                 city: latestOrder.shipping_address.city || prev.address.city,
@@ -242,13 +269,11 @@ const Profile: React.FC = () => {
                 pincode: latestOrder.shipping_address.pincode || prev.address.pincode
               }
             }));
-            
-            console.log('Profile auto-filled from latest order');
           }
         }
       }
     } catch (error) {
-      console.error('Error auto-filling from orders:', error);
+      // Error auto-filling from orders
     } finally {
       setIsAutoFilling(false);
     }

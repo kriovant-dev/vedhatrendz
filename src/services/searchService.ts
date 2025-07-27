@@ -24,14 +24,11 @@ export class SearchService {
 
     // First, try to find exact product by product_code
     try {
-      console.log('🔍 Searching for product with code:', trimmedQuery);
-      
       const { data: productByCode, error: codeError } = await FirebaseClient.getWhere('products', [
         { field: 'product_code', operator: '==', value: trimmedQuery }
       ]);
 
       if (!codeError && productByCode && productByCode.length > 0) {
-        console.log('✅ Found product by code:', productByCode[0]);
         return {
           type: 'product',
           productId: productByCode[0].id,
@@ -48,7 +45,6 @@ export class SearchService {
         );
 
         if (matchingProduct) {
-          console.log('✅ Found product by case-insensitive code:', matchingProduct);
           return {
             type: 'product',
             productId: matchingProduct.id,
@@ -58,11 +54,10 @@ export class SearchService {
       }
 
     } catch (error) {
-      console.error('❌ Error searching for product by code:', error);
+      // Continue to regular search if product code search fails
     }
 
     // If no product found by code, treat as regular search
-    console.log('🔍 No product found by code, treating as text search');
     return {
       type: 'search',
       redirectUrl: `/products?search=${encodeURIComponent(trimmedQuery)}`
