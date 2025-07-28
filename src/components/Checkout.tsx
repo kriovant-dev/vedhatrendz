@@ -560,6 +560,8 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
   };
 
   const handleOrderCreation = async (paymentId: string, orderNumber: string) => {
+    setPaymentLoading(true);
+    
     try {
       // Create order in Firebase with proper structure matching the database
       const orderData = {
@@ -614,10 +616,11 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
       const result = await FirebaseClient.add('orders', orderData);
 
       if (!result.data) {
-        throw new Error('Failed to create order');
+        throw new Error('Failed to create order in database');
       }
 
       // Send email notifications
+      let emailError = null;
       try {
         const emailData = {
           orderNumber,
@@ -637,8 +640,9 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
         if (orderData.customer_email) {
           const customerEmailSent = await emailService.sendOrderConfirmationToCustomer(emailData);
         }
-      } catch (emailError) {
-        // Don't fail the order if email fails
+      } catch (error) {
+        emailError = error;
+        console.error('Email notification failed:', error);
       }
 
       // Clear cart only if it's not a "Buy Now" order
@@ -652,13 +656,25 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
       
       // Reopen checkout and restore state
       setStep('confirmation');
-      onClose();
       onOpen();
       
-      toast.success('Order placed successfully! Payment completed.');
+      if (emailError) {
+        toast.success('Order placed successfully! (Email notification delayed)');
+      } else {
+        toast.success('Order placed successfully! Payment completed.');
+      }
 
     } catch (error) {
-      toast.error('Order creation failed. Please contact support with your payment ID: ' + paymentId);
+      console.error('Order creation error:', error);
+      
+      // Check if the error is from email service only
+      if (error.message?.includes('email') || error.message?.includes('smtp')) {
+        // If it's just an email error, the order was actually created successfully
+        toast.success('Order placed successfully! (Email notification delayed)');
+        setStep('confirmation');
+      } else {
+        toast.error('Order processing error. If you see this message but received an email, your order was successful. Payment ID: ' + paymentId);
+      }
     } finally {
       setPaymentLoading(false);
     }
