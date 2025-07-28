@@ -25,6 +25,7 @@ declare global {
 interface CheckoutProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpen: () => void;
   buyNowItem?: {
     id: string;
     productId: string;
@@ -48,7 +49,7 @@ interface ShippingDetails {
   landmark?: string;
 }
 
-const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
+const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem }) => {
   const { items, getTotalPrice, clearCart } = useCart();
   const { user, isSignedIn } = useAuth();
   const [showEmailAuth, setShowEmailAuth] = useState(false);
@@ -285,6 +286,12 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
     setStep('payment');
   };
 
+  // Store checkout state for restoration
+  const [storedCheckoutState, setStoredCheckoutState] = useState<{
+    step: typeof step;
+    shippingDetails: typeof shippingDetails;
+  } | null>(null);
+
   const handlePayment = async () => {
     if (!user) {
       toast.error('Please sign in to place an order');
@@ -378,47 +385,17 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         },
       };
 
-      // Blur the currently focused element to help Razorpay modal get focus
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
-      }
+      // Store current checkout state
+      setStoredCheckoutState({
+        step,
+        shippingDetails
+      });
 
-      // Prevent background scrolling/interactions while Razorpay modal is open
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
+      // Close the checkout dialog
+      onClose();
 
-      // Temporarily hide the checkout dialog from accessibility tree and tab order
-      const dialog = document.querySelector('[role="dialog"]');
-      let prevTabIndex: string | null = null;
-      let prevAriaHidden: string | null = null;
-      if (dialog) {
-        prevTabIndex = dialog.getAttribute('tabindex');
-        prevAriaHidden = dialog.getAttribute('aria-hidden');
-        dialog.setAttribute('tabindex', '-1');
-        dialog.setAttribute('aria-hidden', 'true');
-      }
-
-      // Create backdrop overlay
-      const overlay = document.createElement('div');
-      overlay.style.position = 'fixed';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.width = '100%';
-      overlay.style.height = '100%';
-      overlay.style.background = 'rgba(0,0,0,0.75)';
-      overlay.style.zIndex = '999998';
-      document.body.appendChild(overlay);
-      (window as any).rzpOverlay = overlay;
-
-      // Hide the dialog
-      const checkoutDialog = document.querySelector('[role="dialog"]');
-      if (checkoutDialog) {
-        (checkoutDialog as HTMLElement).style.visibility = 'hidden';
-        (checkoutDialog as HTMLElement).style.opacity = '0';
-      }
-
-      // Lock the body scroll
-      document.body.style.overflow = 'hidden';
+      // Small delay to ensure checkout is closed
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Store original styles for cleanup
       (window as any).originalStyles = {
@@ -457,24 +434,35 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
             focusRazorpayFrame();
           },
           ondismiss: () => {
-            // Remove the overlay
+            // Restore original styles
+            if ((window as any).originalStyles) {
+              document.body.style.pointerEvents = (window as any).originalStyles.bodyPointerEvents;
+              document.documentElement.style.pointerEvents = (window as any).originalStyles.htmlPointerEvents;
+              document.body.style.overflow = (window as any).originalStyles.bodyOverflow;
+              delete (window as any).originalStyles;
+            }
+            
+            // Remove any overlay
             if ((window as any).rzpOverlay) {
-              document.body.removeChild((window as any).rzpOverlay);
+              if (document.body.contains((window as any).rzpOverlay)) {
+                document.body.removeChild((window as any).rzpOverlay);
+              }
               delete (window as any).rzpOverlay;
             }
 
-            // Show the dialog again
-            const checkoutDialog = document.querySelector('[role="dialog"]');
-            if (checkoutDialog) {
-              (checkoutDialog as HTMLElement).style.visibility = '';
-              (checkoutDialog as HTMLElement).style.opacity = '';
-            }
-
-            // Restore body scroll
-            document.body.style.overflow = originalOverflow;
-            
             setPaymentLoading(false);
             toast.error('Payment cancelled');
+            
+            // Reopen the checkout dialog with stored state
+            if (storedCheckoutState) {
+              onClose(); // Close first to avoid flash
+              setTimeout(() => {
+                setStep(storedCheckoutState.step);
+                setShippingDetails(storedCheckoutState.shippingDetails);
+                onOpen();
+                setStoredCheckoutState(null);
+              }, 100);
+            }
           }
         }
       });
@@ -573,8 +561,16 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         clearCart();
       }
 
-      toast.success('Order placed successfully! Payment completed.');
+      // Restore original checkout state
+      onClose();  // Close first to avoid flash
+      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+      
+      // Reopen checkout and restore state
       setStep('confirmation');
+      onClose();
+      onOpen();
+      
+      toast.success('Order placed successfully! Payment completed.');
 
     } catch (error) {
       toast.error('Order creation failed. Please contact support with your payment ID: ' + paymentId);
