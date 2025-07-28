@@ -398,48 +398,27 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         dialog.setAttribute('aria-hidden', 'true');
       }
 
-      // Disable all keyboard navigation
-      document.addEventListener('keydown', (e) => e.preventDefault());
-
-      // Create backdrop overlay and disable all interactions
+      // Create backdrop overlay
       const overlay = document.createElement('div');
       overlay.style.position = 'fixed';
       overlay.style.top = '0';
       overlay.style.left = '0';
-      overlay.style.width = '100vw';
-      overlay.style.height = '100vh';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
       overlay.style.background = 'rgba(0,0,0,0.75)';
       overlay.style.zIndex = '999998';
-      overlay.setAttribute('aria-hidden', 'true');
-      overlay.style.pointerEvents = 'all';
-      overlay.style.cursor = 'not-allowed';
       document.body.appendChild(overlay);
       (window as any).rzpOverlay = overlay;
 
-      // Find and disable all focusable elements in the background
-      const focusableElements = document.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      focusableElements.forEach(el => {
-        (el as HTMLElement).setAttribute('disabled', 'true');
-        (el as HTMLElement).style.pointerEvents = 'none';
-      });
+      // Hide the dialog
+      const checkoutDialog = document.querySelector('[role="dialog"]');
+      if (checkoutDialog) {
+        (checkoutDialog as HTMLElement).style.visibility = 'hidden';
+        (checkoutDialog as HTMLElement).style.opacity = '0';
+      }
 
-      // Hide all dialogs and make them completely non-interactive
-      const allDialogs = document.querySelectorAll('[role="dialog"]');
-      allDialogs.forEach(dialog => {
-        // Make dialog completely inert
-        dialog.setAttribute('inert', '');
-        dialog.setAttribute('aria-hidden', 'true');
-        (dialog as HTMLElement).style.pointerEvents = 'none';
-        (dialog as HTMLElement).style.visibility = 'hidden';
-        (dialog as HTMLElement).style.display = 'none';
-        (dialog as HTMLElement).style.opacity = '0';
-      });
-
-      // Ensure the body is locked
+      // Lock the body scroll
       document.body.style.overflow = 'hidden';
-      document.body.style.pointerEvents = 'none';
-      document.documentElement.style.pointerEvents = 'none';
-      overlay.style.pointerEvents = 'all'; // Keep overlay interactive
 
       // Store original styles for cleanup
       (window as any).originalStyles = {
@@ -457,42 +436,16 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           escape: false, // Prevent escape key from closing
           animation: false, // Disable animation to prevent focus issues
           onopen: () => {
-            // Focus management for Razorpay frame
             const focusRazorpayFrame = () => {
               const rzpFrame = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement;
               if (rzpFrame) {
-                // Ensure the frame is on top and visible
+                // Set frame styles
                 rzpFrame.style.zIndex = '999999';
-                rzpFrame.style.opacity = '1';
-                rzpFrame.style.visibility = 'visible';
-                rzpFrame.style.pointerEvents = 'all';
                 
-                // Make only the Razorpay frame interactive
-                overlay.style.pointerEvents = 'none';
-                rzpFrame.style.pointerEvents = 'all';
-                
-                // Force focus immediately and repeatedly
-                const forceFrameFocus = () => {
-                  rzpFrame.focus({ preventScroll: true });
-                };
-                
-                // Initial focus
-                forceFrameFocus();
-                
-                // Ensure focus stays on the frame
-                const focusInterval = setInterval(forceFrameFocus, 10);
-                (window as any).rzpFocusInterval = focusInterval;
-                
-                // Also handle any focus changes
-                const preventFocus = (e: FocusEvent) => {
-                  if (e.target !== rzpFrame) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    forceFrameFocus();
-                  }
-                };
-                document.addEventListener('focus', preventFocus, true);
-                (window as any).rzpFocusHandler = preventFocus;
+                // Simple one-time focus
+                setTimeout(() => {
+                  rzpFrame.focus();
+                }, 100);
                 
                 // Stop trying to find the frame
                 return;
@@ -504,52 +457,21 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
             focusRazorpayFrame();
           },
           ondismiss: () => {
-            // Clear focus interval
-            if ((window as any).rzpFocusInterval) {
-              clearInterval((window as any).rzpFocusInterval);
-              delete (window as any).rzpFocusInterval;
-            }
-
-            // Remove focus prevention listener
-            if ((window as any).rzpFocusHandler) {
-              document.removeEventListener('focus', (window as any).rzpFocusHandler, true);
-              delete (window as any).rzpFocusHandler;
-            }
-
-            // Remove the overlay if it exists
+            // Remove the overlay
             if ((window as any).rzpOverlay) {
               document.body.removeChild((window as any).rzpOverlay);
               delete (window as any).rzpOverlay;
             }
 
-            // Re-enable all focusable elements
-            const focusableElements = document.querySelectorAll('[disabled="true"]');
-            focusableElements.forEach(el => {
-              (el as HTMLElement).removeAttribute('disabled');
-              (el as HTMLElement).style.pointerEvents = '';
-            });
-
-            // Restore all dialogs to their original state
-            const allDialogs = document.querySelectorAll('[role="dialog"]');
-            allDialogs.forEach(dialog => {
-              dialog.removeAttribute('inert');
-              dialog.removeAttribute('aria-hidden');
-              (dialog as HTMLElement).style.pointerEvents = '';
-              (dialog as HTMLElement).style.visibility = '';
-              (dialog as HTMLElement).style.display = '';
-              (dialog as HTMLElement).style.opacity = '';
-            });
-
-            // Restore original styles
-            if ((window as any).originalStyles) {
-              document.body.style.pointerEvents = (window as any).originalStyles.bodyPointerEvents;
-              document.documentElement.style.pointerEvents = (window as any).originalStyles.htmlPointerEvents;
-              document.body.style.overflow = (window as any).originalStyles.bodyOverflow;
-              delete (window as any).originalStyles;
+            // Show the dialog again
+            const checkoutDialog = document.querySelector('[role="dialog"]');
+            if (checkoutDialog) {
+              (checkoutDialog as HTMLElement).style.visibility = '';
+              (checkoutDialog as HTMLElement).style.opacity = '';
             }
 
-            // Re-enable keyboard navigation
-            document.removeEventListener('keydown', (e) => e.preventDefault());
+            // Restore body scroll
+            document.body.style.overflow = originalOverflow;
             
             setPaymentLoading(false);
             toast.error('Payment cancelled');
