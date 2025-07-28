@@ -417,7 +417,30 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
           }
         },
         handler: async (response: any) => {
-          await handleOrderCreation(response.razorpay_payment_id, orderNumber);
+          try {
+            // Verify signature before proceeding
+            const verifyResponse = await fetch('/api/verify-razorpay-signature', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+
+            const verifyData = await verifyResponse.json();
+            
+            if (!verifyResponse.ok || !verifyData.valid) {
+              throw new Error('Payment signature verification failed');
+            }
+
+            // If verification successful, proceed with order creation
+            await handleOrderCreation(response.razorpay_payment_id, orderNumber);
+          } catch (error) {
+            toast.error('Payment verification failed. Please contact support.');
+            console.error('Payment verification error:', error);
+          }
         },
         notes: {
           address: `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} - ${shippingDetails.pincode}`,
