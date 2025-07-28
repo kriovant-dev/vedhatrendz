@@ -367,17 +367,23 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         document.activeElement.blur();
       }
 
-      // Open Razorpay modal
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      // Prevent background scrolling/interactions while Razorpay modal is open
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
 
-      // Try to focus the Razorpay modal iframe after a short delay (best effort)
-      setTimeout(() => {
-        const iframe = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement | null;
-        if (iframe) {
-          iframe.focus();
+      // Open Razorpay modal
+      const razorpay = new window.Razorpay({
+        ...options,
+        modal: {
+          ...options.modal,
+          ondismiss: () => {
+            document.body.style.overflow = originalOverflow;
+            setPaymentLoading(false);
+            toast.error('Payment cancelled');
+          }
         }
-      }, 300);
+      });
+      razorpay.open();
 
     } catch (error) {
       toast.error('Failed to initialize payment. Please try again.');
