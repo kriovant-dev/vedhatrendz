@@ -362,8 +362,22 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         },
       };
 
+      // Blur the currently focused element to help Razorpay modal get focus
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
+      // Open Razorpay modal
       const razorpay = new window.Razorpay(options);
       razorpay.open();
+
+      // Try to focus the Razorpay modal iframe after a short delay (best effort)
+      setTimeout(() => {
+        const iframe = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement | null;
+        if (iframe) {
+          iframe.focus();
+        }
+      }, 300);
 
     } catch (error) {
       toast.error('Failed to initialize payment. Please try again.');
