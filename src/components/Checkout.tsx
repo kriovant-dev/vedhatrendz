@@ -58,13 +58,29 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
 
   // Load Razorpay script
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
+    const loadRazorpay = () => {
+      return new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Razorpay'));
+        document.body.appendChild(script);
+      });
+    };
+
+    // Only load if not already loaded
+    if (!window.Razorpay) {
+      loadRazorpay().catch(error => {
+        console.error('Failed to load Razorpay:', error);
+      });
+    }
 
     return () => {
-      document.body.removeChild(script);
+      const script = document.querySelector('script[src*="razorpay"]');
+      if (script) {
+        document.body.removeChild(script);
+      }
     };
   }, []);
 
@@ -382,12 +398,27 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         dialog.setAttribute('aria-hidden', 'true');
       }
 
+      // Create and add overlay first
+      const overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.background = 'rgba(0,0,0,0.5)';
+      overlay.style.zIndex = '99998';
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.style.pointerEvents = 'all';
+      document.body.appendChild(overlay);
+      (window as any).rzpOverlay = overlay;
+
       // Hide all dialogs and make them non-interactive
       const allDialogs = document.querySelectorAll('[role="dialog"]');
       allDialogs.forEach(dialog => {
         dialog.setAttribute('inert', '');
         dialog.setAttribute('aria-hidden', 'true');
         (dialog as HTMLElement).style.pointerEvents = 'none';
+        (dialog as HTMLElement).style.visibility = 'hidden';
       });
 
       // Open Razorpay modal
@@ -397,28 +428,35 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
           ...options.modal,
           backdropClose: false,  // Prevent closing on backdrop click
           escape: false, // Prevent escape key from closing
+          animation: false, // Disable animation to prevent focus issues
           onopen: () => {
-            // Ensure body is not scrollable
+            // Ensure body is not scrollable and no text selection
             document.body.style.overflow = 'hidden';
+            document.body.style.userSelect = 'none';
             
-            // Immediately try to focus the Razorpay frame
+            // Focus management for Razorpay frame
             const focusRazorpayFrame = () => {
               const rzpFrame = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement;
               if (rzpFrame) {
-                rzpFrame.focus();
+                // Set high z-index and ensure frame is visible
                 rzpFrame.style.zIndex = '999999';
-                // Create an overlay to prevent interaction with background
-                const overlay = document.createElement('div');
-                overlay.style.position = 'fixed';
-                overlay.style.top = '0';
-                overlay.style.left = '0';
-                overlay.style.width = '100%';
-                overlay.style.height = '100%';
-                overlay.style.background = 'rgba(0,0,0,0.001)';
-                overlay.style.zIndex = '99998';
-                document.body.appendChild(overlay);
-                // Store overlay reference for cleanup
-                (window as any).rzpOverlay = overlay;
+                rzpFrame.style.opacity = '1';
+                rzpFrame.style.visibility = 'visible';
+                
+                // Force focus on the frame
+                setTimeout(() => {
+                  rzpFrame.focus();
+                  // Add event listener to prevent focus from leaving the frame
+                  const preventFocus = (e: FocusEvent) => {
+                    if (e.target !== rzpFrame) {
+                      e.stopPropagation();
+                      rzpFrame.focus();
+                    }
+                  };
+                  document.addEventListener('focus', preventFocus, true);
+                  // Store the event listener for cleanup
+                  (window as any).rzpFocusHandler = preventFocus;
+                }, 100);
               } else {
                 // Retry a few times if frame is not immediately available
                 setTimeout(focusRazorpayFrame, 50);
@@ -427,6 +465,12 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
             focusRazorpayFrame();
           },
           ondismiss: () => {
+            // Remove focus prevention listener
+            if ((window as any).rzpFocusHandler) {
+              document.removeEventListener('focus', (window as any).rzpFocusHandler, true);
+              delete (window as any).rzpFocusHandler;
+            }
+
             // Remove the overlay if it exists
             if ((window as any).rzpOverlay) {
               document.body.removeChild((window as any).rzpOverlay);
@@ -439,10 +483,12 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
               dialog.removeAttribute('inert');
               dialog.removeAttribute('aria-hidden');
               (dialog as HTMLElement).style.pointerEvents = '';
+              (dialog as HTMLElement).style.visibility = '';
             });
 
-            // Restore original scroll behavior
+            // Restore body styles
             document.body.style.overflow = originalOverflow;
+            document.body.style.userSelect = '';
             
             setPaymentLoading(false);
             toast.error('Payment cancelled');
