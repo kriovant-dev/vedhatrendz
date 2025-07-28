@@ -382,37 +382,68 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         dialog.setAttribute('aria-hidden', 'true');
       }
 
+      // Hide all dialogs and make them non-interactive
+      const allDialogs = document.querySelectorAll('[role="dialog"]');
+      allDialogs.forEach(dialog => {
+        dialog.setAttribute('inert', '');
+        dialog.setAttribute('aria-hidden', 'true');
+        (dialog as HTMLElement).style.pointerEvents = 'none';
+      });
+
       // Open Razorpay modal
       const razorpay = new window.Razorpay({
         ...options,
         modal: {
           ...options.modal,
           backdropClose: false,  // Prevent closing on backdrop click
+          escape: false, // Prevent escape key from closing
           onopen: () => {
-            // Make the checkout dialog inert
-            if (dialog) {
-              dialog.setAttribute('inert', '');
-              dialog.setAttribute('aria-hidden', 'true');
-            }
+            // Ensure body is not scrollable
+            document.body.style.overflow = 'hidden';
             
-            // Focus the Razorpay frame immediately when it opens
-            setTimeout(() => {
+            // Immediately try to focus the Razorpay frame
+            const focusRazorpayFrame = () => {
               const rzpFrame = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement;
               if (rzpFrame) {
                 rzpFrame.focus();
+                rzpFrame.style.zIndex = '999999';
+                // Create an overlay to prevent interaction with background
+                const overlay = document.createElement('div');
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.background = 'rgba(0,0,0,0.001)';
+                overlay.style.zIndex = '99998';
+                document.body.appendChild(overlay);
+                // Store overlay reference for cleanup
+                (window as any).rzpOverlay = overlay;
+              } else {
+                // Retry a few times if frame is not immediately available
+                setTimeout(focusRazorpayFrame, 50);
               }
-            }, 100);
+            };
+            focusRazorpayFrame();
           },
           ondismiss: () => {
-            document.body.style.overflow = originalOverflow;
-            // Restore dialog accessibility attributes and remove inert
-            if (dialog) {
-              dialog.removeAttribute('inert');
-              if (prevTabIndex !== null) dialog.setAttribute('tabindex', prevTabIndex);
-              else dialog.removeAttribute('tabindex');
-              if (prevAriaHidden !== null) dialog.setAttribute('aria-hidden', prevAriaHidden);
-              else dialog.removeAttribute('aria-hidden');
+            // Remove the overlay if it exists
+            if ((window as any).rzpOverlay) {
+              document.body.removeChild((window as any).rzpOverlay);
+              delete (window as any).rzpOverlay;
             }
+
+            // Restore all dialogs to their original state
+            const allDialogs = document.querySelectorAll('[role="dialog"]');
+            allDialogs.forEach(dialog => {
+              dialog.removeAttribute('inert');
+              dialog.removeAttribute('aria-hidden');
+              (dialog as HTMLElement).style.pointerEvents = '';
+            });
+
+            // Restore original scroll behavior
+            document.body.style.overflow = originalOverflow;
+            
             setPaymentLoading(false);
             toast.error('Payment cancelled');
           }
