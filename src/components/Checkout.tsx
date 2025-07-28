@@ -367,15 +367,35 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         document.activeElement.blur();
       }
 
-      // Add a class to body to freeze background when Razorpay modal is open
-      document.body.classList.add('razorpay-modal-open');
+      // Prevent background scrolling/interactions while Razorpay modal is open
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
 
+      // Temporarily hide the checkout dialog from accessibility tree and tab order
+      const dialog = document.querySelector('[role="dialog"]');
+      let prevTabIndex: string | null = null;
+      let prevAriaHidden: string | null = null;
+      if (dialog) {
+        prevTabIndex = dialog.getAttribute('tabindex');
+        prevAriaHidden = dialog.getAttribute('aria-hidden');
+        dialog.setAttribute('tabindex', '-1');
+        dialog.setAttribute('aria-hidden', 'true');
+      }
+
+      // Open Razorpay modal
       const razorpay = new window.Razorpay({
         ...options,
         modal: {
           ...options.modal,
           ondismiss: () => {
-            document.body.classList.remove('razorpay-modal-open');
+            document.body.style.overflow = originalOverflow;
+            // Restore dialog accessibility attributes
+            if (dialog) {
+              if (prevTabIndex !== null) dialog.setAttribute('tabindex', prevTabIndex);
+              else dialog.removeAttribute('tabindex');
+              if (prevAriaHidden !== null) dialog.setAttribute('aria-hidden', prevAriaHidden);
+              else dialog.removeAttribute('aria-hidden');
+            }
             setPaymentLoading(false);
             toast.error('Payment cancelled');
           }
@@ -383,13 +403,14 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
       });
       razorpay.open();
 
-      // Try to focus the Razorpay modal iframe after a short delay (best effort)
-      setTimeout(() => {
+      // Focus the Razorpay iframe as soon as it appears
+      const focusInterval = setInterval(() => {
         const iframe = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement | null;
         if (iframe) {
           iframe.focus();
+          clearInterval(focusInterval);
         }
-      }, 300);
+      }, 50);
 
     } catch (error) {
       toast.error('Failed to initialize payment. Please try again.');
