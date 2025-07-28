@@ -70,6 +70,44 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
       });
     };
 
+    const cleanup = () => {
+      // Clean up any leftover Razorpay elements
+      if ((window as any).originalStyles) {
+        document.body.style.pointerEvents = (window as any).originalStyles.bodyPointerEvents;
+        document.documentElement.style.pointerEvents = (window as any).originalStyles.htmlPointerEvents;
+        document.body.style.overflow = (window as any).originalStyles.bodyOverflow;
+        delete (window as any).originalStyles;
+      }
+
+      if ((window as any).rzpOverlay) {
+        if (document.body.contains((window as any).rzpOverlay)) {
+          document.body.removeChild((window as any).rzpOverlay);
+        }
+        delete (window as any).rzpOverlay;
+      }
+
+      // Re-enable all elements and restore styles
+      document.body.style.overflow = '';
+      document.body.style.pointerEvents = '';
+      document.documentElement.style.pointerEvents = '';
+
+      const focusableElements = document.querySelectorAll('[disabled="true"]');
+      focusableElements.forEach(el => {
+        (el as HTMLElement).removeAttribute('disabled');
+        (el as HTMLElement).style.pointerEvents = '';
+      });
+
+      const allDialogs = document.querySelectorAll('[role="dialog"]');
+      allDialogs.forEach(dialog => {
+        dialog.removeAttribute('inert');
+        dialog.removeAttribute('aria-hidden');
+        (dialog as HTMLElement).style.pointerEvents = '';
+        (dialog as HTMLElement).style.visibility = '';
+        (dialog as HTMLElement).style.display = '';
+        (dialog as HTMLElement).style.opacity = '';
+      });
+    };
+
     // Only load if not already loaded
     if (!window.Razorpay) {
       loadRazorpay().catch(error => {
@@ -78,6 +116,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
     }
 
     return () => {
+      cleanup();
       const script = document.querySelector('script[src*="razorpay"]');
       if (script) {
         document.body.removeChild(script);
@@ -449,6 +488,29 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
               }
               delete (window as any).rzpOverlay;
             }
+
+            // Re-enable all focusable elements
+            const focusableElements = document.querySelectorAll('[disabled="true"]');
+            focusableElements.forEach(el => {
+              (el as HTMLElement).removeAttribute('disabled');
+              (el as HTMLElement).style.pointerEvents = '';
+            });
+
+            // Remove inert attribute from dialogs
+            const allDialogs = document.querySelectorAll('[role="dialog"]');
+            allDialogs.forEach(dialog => {
+              dialog.removeAttribute('inert');
+              dialog.removeAttribute('aria-hidden');
+              (dialog as HTMLElement).style.pointerEvents = '';
+              (dialog as HTMLElement).style.visibility = '';
+              (dialog as HTMLElement).style.display = '';
+              (dialog as HTMLElement).style.opacity = '';
+            });
+
+            // Ensure body scroll is restored
+            document.body.style.overflow = '';
+            document.body.style.pointerEvents = '';
+            document.documentElement.style.pointerEvents = '';
 
             setPaymentLoading(false);
             toast.error('Payment cancelled');
