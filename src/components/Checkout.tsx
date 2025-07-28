@@ -387,10 +387,27 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         ...options,
         modal: {
           ...options.modal,
+          backdropClose: false,  // Prevent closing on backdrop click
+          onopen: () => {
+            // Make the checkout dialog inert
+            if (dialog) {
+              dialog.setAttribute('inert', '');
+              dialog.setAttribute('aria-hidden', 'true');
+            }
+            
+            // Focus the Razorpay frame immediately when it opens
+            setTimeout(() => {
+              const rzpFrame = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement;
+              if (rzpFrame) {
+                rzpFrame.focus();
+              }
+            }, 100);
+          },
           ondismiss: () => {
             document.body.style.overflow = originalOverflow;
-            // Restore dialog accessibility attributes
+            // Restore dialog accessibility attributes and remove inert
             if (dialog) {
+              dialog.removeAttribute('inert');
               if (prevTabIndex !== null) dialog.setAttribute('tabindex', prevTabIndex);
               else dialog.removeAttribute('tabindex');
               if (prevAriaHidden !== null) dialog.setAttribute('aria-hidden', prevAriaHidden);
@@ -402,15 +419,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, buyNowItem }) => {
         }
       });
       razorpay.open();
-
-      // Focus the Razorpay iframe as soon as it appears
-      const focusInterval = setInterval(() => {
-        const iframe = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement | null;
-        if (iframe) {
-          iframe.focus();
-          clearInterval(focusInterval);
-        }
-      }, 50);
 
     } catch (error) {
       toast.error('Failed to initialize payment. Please try again.');
