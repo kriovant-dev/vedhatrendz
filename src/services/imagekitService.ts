@@ -11,7 +11,7 @@ export interface ImageUploadResult {
 export class ImageKitService {
   private static readonly IMAGEKIT_URL_ENDPOINT = 'https://ik.imagekit.io';
   private static readonly IMAGEKIT_PUBLIC_KEY = import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || '';
-  private static readonly IMAGEKIT_PRIVATE_KEY = import.meta.env.VITE_IMAGEKIT_PRIVATE_KEY || '';
+  private static readonly IMAGEKIT_PRIVATE_KEY = import.meta.env.IMAGEKIT_PRIVATE_KEY || '';
   private static readonly IMAGEKIT_URL_ENDPOINT_PREFIX = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || '';
 
   /**
