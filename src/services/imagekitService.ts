@@ -11,7 +11,7 @@ export interface ImageUploadResult {
 export class ImageKitService {
   private static readonly IMAGEKIT_URL_ENDPOINT = 'https://ik.imagekit.io';
   private static readonly IMAGEKIT_PUBLIC_KEY = import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY || '';
-  private static readonly IMAGEKIT_PRIVATE_KEY = import.meta.env.IMAGEKIT_PRIVATE_KEY || '';
+  private static readonly IMAGEKIT_PRIVATE_KEY = import.meta.env.VITE_IMAGEKIT_PRIVATE_KEY || '';
   private static readonly IMAGEKIT_URL_ENDPOINT_PREFIX = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT || '';
 
   /**
@@ -126,44 +126,36 @@ export class ImageKitService {
   }
 
   /**
-   * Upload image to ImageKit via server-side API
+   * Upload image to ImageKit
    */
   static async uploadImage(file: File, folder: string = 'products'): Promise<ImageUploadResult> {
     try {
-      // Convert file to base64
-      const base64String = await this.fileToBase64(file);
-      
-      const payload = {
-        file: base64String,
-        fileName: file.name,
-        folder: folder
-      };
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('fileName', file.name);
+      formData.append('folder', folder);
+      formData.append('useUniqueFileName', 'true');
 
-      const response = await fetch('/api/upload-image', {
+      const response = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(this.IMAGEKIT_PRIVATE_KEY + ':')}`,
         },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Upload failed: ${errorData.details || response.statusText}`);
+        throw new Error(`Upload failed: ${response.statusText}`);
       }
 
       const result = await response.json();
       
-      if (!result.success) {
-        throw new Error(`Upload failed: ${result.details || 'Unknown error'}`);
-      }
-      
       return {
-        url: result.data.url,
-        thumbnailUrl: result.data.thumbnailUrl || result.data.url,
-        fileId: result.data.fileId,
-        name: result.data.name,
-        size: result.data.size
+        url: result.url,
+        thumbnailUrl: result.thumbnailUrl || result.url,
+        fileId: result.fileId,
+        name: result.name,
+        size: result.size
       };
     } catch (error) {
       throw error;
@@ -171,96 +163,53 @@ export class ImageKitService {
   }
 
   /**
-   * Convert file to base64 string
-   */
-  private static fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Remove data:image/jpeg;base64, prefix to get just the base64 string
-        const base64 = result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = error => reject(error);
-    });
-  }
-
-  /**
-   * Delete image from ImageKit via server-side API
+   * Delete image from ImageKit
    */
   static async deleteImage(fileId: string): Promise<boolean> {
     try {
-      const response = await fetch('/api/delete-image', {
+      const response = await fetch(`https://api.imagekit.io/v1/files/${fileId}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(this.IMAGEKIT_PRIVATE_KEY + ':')}`,
         },
-        body: JSON.stringify({ fileId }),
       });
 
-      const result = await response.json();
-      return response.ok && result.success;
+      return response.ok;
     } catch (error) {
       return false;
     }
   }
 
   /**
-   * Delete multiple images from ImageKit via server-side API
+   * Delete multiple images from ImageKit
    */
   static async deleteMultipleImages(fileIds: string[]): Promise<boolean[]> {
-    try {
-      const response = await fetch('/api/delete-image', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fileIds }),
-      });
+    const results = await Promise.allSettled(
+      fileIds.map(fileId => this.deleteImage(fileId))
+    );
 
-      const result = await response.json();
-      
-      if (response.ok && result.success) {
-        // Map the results back to boolean array matching the input order
-        return fileIds.map(fileId => {
-          const failure = result.data.failures?.find((f: any) => f.fileId === fileId);
-          return !failure; // true if not in failures array
-        });
-      }
-      
-      // If the request failed, return all false
-      return fileIds.map(() => false);
-    } catch (error) {
-      return fileIds.map(() => false);
-    }
+    return results.map(result => 
+      result.status === 'fulfilled' ? result.value : false
+    );
   }
 
   /**
-   * Get image details from ImageKit via server-side API
+   * Get image details from ImageKit
    */
   static async getImageDetails(fileId: string): Promise<any> {
     try {
-      const response = await fetch(`/api/image-details?fileId=${encodeURIComponent(fileId)}`, {
+      const response = await fetch(`https://api.imagekit.io/v1/files/${fileId}`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(this.IMAGEKIT_PRIVATE_KEY + ':')}`,
         },
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Failed to get image details: ${errorData.details || response.statusText}`);
+        throw new Error(`Failed to get image details: ${response.statusText}`);
       }
 
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(`Failed to get image details: ${result.details || 'Unknown error'}`);
-      }
-
-      return result.data;
+      return await response.json();
     } catch (error) {
       throw error;
     }
