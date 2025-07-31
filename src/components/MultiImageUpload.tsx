@@ -35,38 +35,57 @@ const MultiImageUpload: React.FC<MultiImageUploadProps> = ({
 
     setIsUploading(true);
     const newImages: ImageUploadResult[] = [];
+    const failedUploads: string[] = [];
 
     try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
+      // Convert FileList to Array for better handling
+      const fileArray = Array.from(files);
+      
+      // Process all files in parallel for better performance
+      const uploadPromises = fileArray.map(async (file) => {
         // Validate file type
         if (!file.type.startsWith('image/')) {
-          toast.error(`${file.name} is not a valid image file`);
-          continue;
+          failedUploads.push(`${file.name} - not a valid image file`);
+          return null;
         }
 
         // Validate file size
         if (file.size > maxSize * 1024 * 1024) {
-          toast.error(`${file.name} is too large. Maximum size is ${maxSize}MB`);
-          continue;
+          failedUploads.push(`${file.name} - too large (max ${maxSize}MB)`);
+          return null;
         }
 
         try {
           const result = await ImageKitService.uploadImage(file);
-          newImages.push(result);
+          return result;
         } catch (error) {
           console.error(`Failed to upload ${file.name}:`, error);
-          toast.error(`Failed to upload ${file.name}`);
+          failedUploads.push(`${file.name} - upload failed`);
+          return null;
         }
-      }
+      });
 
-      if (newImages.length > 0) {
-        const updatedImages = [...images, ...newImages];
+      // Wait for all uploads to complete
+      const results = await Promise.all(uploadPromises);
+      
+      // Filter out null results (failed uploads)
+      const successfulUploads = results.filter((result): result is ImageUploadResult => result !== null);
+      
+      if (successfulUploads.length > 0) {
+        const updatedImages = [...images, ...successfulUploads];
         setImages(updatedImages);
         onImagesUploaded(updatedImages);
-        toast.success(`${newImages.length} image(s) uploaded successfully`);
+        toast.success(`${successfulUploads.length} image(s) uploaded successfully`);
       }
+
+      // Show errors for failed uploads
+      if (failedUploads.length > 0) {
+        toast.error(`Failed uploads: ${failedUploads.join(', ')}`);
+      }
+
+    } catch (error) {
+      console.error('Error processing files:', error);
+      toast.error('Error processing files');
     } finally {
       setIsUploading(false);
     }

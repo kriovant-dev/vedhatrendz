@@ -3,7 +3,7 @@ const ImageKit = require('imagekit');
 // Initialize ImageKit with server-side credentials
 const imagekit = new ImageKit({
   publicKey: process.env.VITE_IMAGEKIT_PUBLIC_KEY,
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+  privateKey: process.env.VITE_IMAGEKIT_PRIVATE_KEY,
   urlEndpoint: process.env.VITE_IMAGEKIT_URL_ENDPOINT
 });
 
@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
 
   try {
     // Check if ImageKit is configured
-    if (!process.env.VITE_IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY || !process.env.VITE_IMAGEKIT_URL_ENDPOINT) {
+    if (!process.env.VITE_IMAGEKIT_PUBLIC_KEY || !process.env.VITE_IMAGEKIT_PRIVATE_KEY || !process.env.VITE_IMAGEKIT_URL_ENDPOINT) {
       return res.status(500).json({ 
         error: 'ImageKit configuration missing',
         details: 'Please check your environment variables'

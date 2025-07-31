@@ -130,6 +130,11 @@ export class ImageKitService {
    */
   static async uploadImage(file: File, folder: string = 'products'): Promise<ImageUploadResult> {
     try {
+      // Debug: Check if private key is available
+      if (!this.IMAGEKIT_PRIVATE_KEY) {
+        throw new Error('ImageKit private key is not configured');
+      }
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('fileName', file.name);
@@ -145,7 +150,8 @@ export class ImageKitService {
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
