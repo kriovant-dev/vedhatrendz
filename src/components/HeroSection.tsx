@@ -173,7 +173,8 @@ const HeroSection = () => {
           <div className="relative animate-fade-in mt-8 lg:mt-0">
             <div className="relative">
               {/* Main Image Container */}
-              <div className="relative overflow-hidden rounded-2xl shadow-elegant hover-lift">
+              <div className="relative overflow-hidden rounded-2xl shadow-elegant hover-lift cursor-pointer"
+                   onClick={() => hasProducts && currentProduct && navigate(`/product/${currentProduct.id}`)}>
                 {hasProducts && currentProduct ? (
                   <>
                     <div 
@@ -187,7 +188,7 @@ const HeroSection = () => {
                           quality: 90
                         })}
                         alt={currentProduct.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                       />
                       
                       {/* Product Badges */}
@@ -206,16 +207,22 @@ const HeroSection = () => {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg"
-                            onClick={prevSlide}
+                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg z-20"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              prevSlide();
+                            }}
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="icon"
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg"
-                            onClick={nextSlide}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white shadow-lg z-20"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              nextSlide();
+                            }}
                           >
                             <ChevronRight className="h-4 w-4" />
                           </Button>
@@ -236,24 +243,6 @@ const HeroSection = () => {
                               {formatPrice(currentProduct.original_price)}
                             </span>
                           )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => navigate(`/product/${currentProduct.id}`)}
-                            variant="outline"
-                            size="sm"
-                            className="bg-white/20 border-white/30 text-white hover:bg-white/30"
-                          >
-                            View Details
-                          </Button>
-                          <Button
-                            onClick={() => handleAddToCart(currentProduct)}
-                            size="sm"
-                            className="bg-primary text-primary-foreground hover:bg-primary/90"
-                          >
-                            <ShoppingBag className="w-4 h-4 mr-1" />
-                            Add to Cart
-                          </Button>
                         </div>
                       </div>
                     </div>
