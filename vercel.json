@@ -2,6 +2,15 @@
   "functions": {
     "api/send-email.js": {
       "maxDuration": 30
+    },
+    "api/upload-image.js": {
+      "maxDuration": 30
+    },
+    "api/delete-image.js": {
+      "maxDuration": 30
+    },
+    "api/image-details.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
