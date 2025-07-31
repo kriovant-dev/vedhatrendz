@@ -132,7 +132,15 @@ export class ImageKitService {
     try {
       // Debug: Check if private key is available
       if (!this.IMAGEKIT_PRIVATE_KEY) {
-        throw new Error('ImageKit private key is not configured');
+        throw new Error('ImageKit private key is not configured. Please check your environment variables.');
+      }
+
+      if (!this.IMAGEKIT_PUBLIC_KEY) {
+        throw new Error('ImageKit public key is not configured. Please check your environment variables.');
+      }
+
+      if (!this.IMAGEKIT_URL_ENDPOINT_PREFIX) {
+        throw new Error('ImageKit URL endpoint is not configured. Please check your environment variables.');
       }
 
       const formData = new FormData();

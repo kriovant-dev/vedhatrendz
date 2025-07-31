@@ -467,7 +467,7 @@ const Sarees = () => {
         ) : (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📦</div>
-            <h3 className="text-xl font-semibold mb-2">No sarees found</h3>
+            <h3 className="text-xl font-semibold mb-2">No Products found</h3>
             <p className="text-muted-foreground">
               {selectedCategory !== 'all' 
                 ? `No products found in "${selectedCategory}" category. Try selecting a different category or adjusting your filters.`
