@@ -188,7 +188,6 @@ const ProductManager = () => {
   // Create product mutation
   const createProductMutation = useMutation({
     mutationFn: async (productData: CreateProductData) => {
-      console.log('Creating product with data:', productData);
       const { data, error } = await firebase
         .from('products')
         .insert(productData) // Remove array wrapper - Firebase client handles this
@@ -198,7 +197,6 @@ const ProductManager = () => {
         console.error('Product creation error:', error);
         throw error;
       }
-      console.log('Product created successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -262,7 +260,6 @@ const ProductManager = () => {
       if (product && product.image_file_ids && product.image_file_ids.length > 0) {
         try {
           await ImageKitService.deleteMultipleImages(product.image_file_ids);
-          console.log('Successfully deleted images from ImageKit');
         } catch (imageError) {
           console.error('Failed to delete images from ImageKit:', imageError);
           // Don't throw here as the product is already deleted from database

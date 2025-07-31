@@ -75,8 +75,6 @@ app.post('/api/send-email', async (req, res) => {
 
     const result = await transporter.sendMail(mailOptions);
     
-    console.log(`📧 Email sent successfully to ${to}:`, result.messageId);
-    
     res.json({
       success: true,
       messageId: result.messageId,

@@ -146,12 +146,19 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
     landmark: ''
   });
 
-  // Auto-advance to details step if user is already signed in
+  // Auto-load profile when user signs in or when details step is reached
   useEffect(() => {
-    if (isSignedIn && step === 'details') {
+    if (isSignedIn && user && step === 'details') {
       loadUserProfile();
     }
-  }, [isSignedIn, step]);
+  }, [isSignedIn, user, step]);
+
+  // Also load profile when user becomes available
+  useEffect(() => {
+    if (user && isSignedIn) {
+      loadUserProfile();
+    }
+  }, [user, isSignedIn]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -204,6 +211,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
       }
     } catch (error) {
       // Don't throw error here as it shouldn't block order placement
+      console.error('Profile save error:', error);
     }
   };
 
@@ -221,7 +229,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
           ...prev,
           fullName: profile.name || user.displayName || '',
           email: profile.email || user.email || '',
-          phone: profile.phone || '',
+          phone: profile.phone || profile.user_phone || '',
           address: profile.address?.street || '',
           city: profile.address?.city || '',
           state: profile.address?.state || '',
@@ -235,7 +243,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
           ...prev,
           fullName: user.displayName || '',
           email: user.email || '',
-          phone: ''
+          phone: user.phoneNumber || ''
         }));
       }
     } catch (error) {
@@ -244,7 +252,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
         ...prev,
         fullName: user.displayName || '',
         email: user.email || '',
-        phone: ''
+        phone: user.phoneNumber || ''
       }));
     }
   };
@@ -333,7 +341,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
 
   // Define handleOrderCreation with useCallback to ensure stable reference
   const handleOrderCreation = useCallback(async (paymentId: string, orderNumber: string) => {
-    console.log('handleOrderCreation called with:', { paymentId, orderNumber });
     setPaymentLoading(true);
     
     try {
@@ -422,6 +429,14 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
       // Clear cart only if it's not a "Buy Now" order
       if (!buyNowItem) {
         clearCart();
+      }
+
+      // Automatically save user profile after successful order
+      try {
+        await saveUserProfile();
+      } catch (profileError) {
+        // Don't fail the order if profile save fails
+        console.error('Profile save failed:', profileError);
       }
 
       // Restore original checkout state
@@ -553,7 +568,6 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
           }
         },
         handler: async (response: any) => {
-          console.log('Razorpay payment successful:', response);
           try {
             // Verify signature before proceeding
             const verifyResponse = await fetch('/api/verify-razorpay-signature', {
@@ -574,9 +588,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
 
             // If verification successful, proceed with order creation
             // Use the callback directly to ensure it's available
-            console.log('handleOrderCreation type:', typeof handleOrderCreation);
             if (typeof handleOrderCreation === 'function') {
-              console.log('Calling handleOrderCreation...');
               await handleOrderCreation(response.razorpay_payment_id, orderNumber);
             } else {
               console.error('handleOrderCreation is not a function:', handleOrderCreation);
@@ -761,7 +773,13 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
               Verified: {user.email || user.phoneNumber || 'User'}
             </span>
           </div>
-          <Button onClick={() => setStep('details')} className="w-full">
+          <Button onClick={() => {
+            setStep('details');
+            // Load profile when moving to details step
+            if (user) {
+              setTimeout(() => loadUserProfile(), 100);
+            }
+          }} className="w-full">
             Continue to Shipping Details
           </Button>
         </div>

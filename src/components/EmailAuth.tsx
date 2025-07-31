@@ -104,7 +104,6 @@ const EmailAuth: React.FC<EmailAuthProps> = ({ isOpen, onClose, onSuccess }) => 
         if (popupError.code === 'auth/popup-blocked' || 
             popupError.code === 'auth/popup-closed-by-user' ||
             popupError.message.includes('Cross-Origin-Opener-Policy')) {
-          console.log('Popup blocked, falling back to redirect...');
           await signInWithRedirect(auth, provider);
           // The redirect will handle the success automatically
         } else {

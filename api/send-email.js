@@ -1,8 +1,6 @@
 const nodemailer = require('nodemailer');
 
 module.exports = async (req, res) => {
-  console.log('📧 Email API called:', req.method, req.url);
-  
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -27,8 +25,6 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log('📧 Processing email request...');
-    
     // Check environment variables
     if (!process.env.SMTP_USER) {
       throw new Error('SMTP_USER environment variable is not set');
@@ -38,7 +34,6 @@ module.exports = async (req, res) => {
     }
 
     const { to, subject, html, text } = req.body;
-    console.log('📧 Email data received:', { to, subject: subject?.substring(0, 50) + '...' });
 
     if (!to || !subject || !html) {
       return res.status(400).json({
@@ -56,8 +51,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    console.log('📧 Creating transporter...');
-    
     // Create transporter with basic auth (app password)
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -77,10 +70,7 @@ module.exports = async (req, res) => {
       text: text || ''
     };
 
-    console.log('📧 Sending email...');
     const result = await transporter.sendMail(mailOptions);
-    
-    console.log(`📧 Email sent successfully to ${to}:`, result.messageId);
     
     res.status(200).json({
       success: true,

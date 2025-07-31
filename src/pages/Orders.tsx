@@ -65,7 +65,6 @@ const Orders: React.FC = () => {
   const loadUserOrders = async () => {
     try {
       const userEmail = user?.email;
-      console.log('Loading orders for email:', userEmail);
       
       if (userEmail) {
         const { orders, error } = await OrderService.getOrdersByUser(userEmail);
@@ -73,7 +72,6 @@ const Orders: React.FC = () => {
           console.error('Error loading orders:', error);
           toast.error('Failed to load orders');
         } else {
-          console.log('Loaded orders:', orders);
           setOrders(orders);
           
           if (orders.length === 0) {
@@ -82,7 +80,6 @@ const Orders: React.FC = () => {
               const { data: fallbackOrders } = await FirebaseClient.getWhere('orders', [
                 { field: 'customer_email', operator: '==', value: userEmail }
               ]);
-              console.log('Fallback orders with customer_email:', fallbackOrders);
               if (fallbackOrders && fallbackOrders.length > 0) {
                 // Convert to Order format
                 const convertedOrders = fallbackOrders.map(order => ({
@@ -101,15 +98,12 @@ const Orders: React.FC = () => {
                   notes: order.notes
                 }));
                 setOrders(convertedOrders);
-                console.log('Using fallback orders:', convertedOrders);
               }
             } catch (fallbackError) {
               console.error('Fallback search failed:', fallbackError);
             }
           }
         }
-      } else {
-        console.log('No phone number found for user');
       }
     } catch (error) {
       console.error('Error loading orders:', error);
@@ -391,7 +385,6 @@ const Orders: React.FC = () => {
                 onClick={async () => {
                   try {
                     const { data: allOrders } = await FirebaseClient.getAll('orders');
-                    console.log('All orders in database:', allOrders);
                     toast.success(`Found ${allOrders?.length || 0} total orders in database`);
                   } catch (error) {
                     console.error('Error fetching all orders:', error);
@@ -479,7 +472,7 @@ const Orders: React.FC = () => {
                   <p>User ID: {user?.uid || 'Not found'}</p>
                   <p>Total Orders: {orders.length}</p>
                   <button 
-                    onClick={() => console.log('User object:', user)} 
+                    onClick={() => {}} 
                     className="bg-blue-500 text-white px-2 py-1 rounded text-xs mt-2"
                   >
                     Log User to Console

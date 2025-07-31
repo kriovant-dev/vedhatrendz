@@ -35,7 +35,7 @@ const PhoneAuth: React.FC<PhoneAuthProps> = ({ isOpen, onClose, onSuccess }) => 
       const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': () => {
-          console.log('reCAPTCHA solved');
+          // reCAPTCHA solved
         },
         'expired-callback': () => {
           setError('reCAPTCHA expired. Please try again.');

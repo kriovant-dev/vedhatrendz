@@ -15,11 +15,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log('🧪 Simple test endpoint called');
-    
     // Test nodemailer import
     const nodemailer = require('nodemailer');
-    console.log('✅ Nodemailer imported successfully');
     
     // Test environment variables
     const envCheck = {
@@ -28,7 +25,6 @@ module.exports = async (req, res) => {
       smtpUser: process.env.SMTP_USER ? 'set' : 'not set',
       smtpHost: process.env.SMTP_HOST || 'default: smtp.gmail.com'
     };
-    console.log('📋 Environment check:', envCheck);
     
     // Test creating a transporter (without sending)
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -41,14 +37,12 @@ module.exports = async (req, res) => {
           pass: process.env.SMTP_PASS
         }
       });
-      console.log('✅ Transporter created successfully');
       
       // Try to verify the connection
       try {
         await transporter.verify();
-        console.log('✅ SMTP connection verified');
       } catch (verifyError) {
-        console.log('❌ SMTP verification failed:', verifyError.message);
+        // Connection verification failed
       }
     }
     
