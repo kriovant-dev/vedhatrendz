@@ -331,235 +331,9 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
     shippingDetails: typeof shippingDetails;
   } | null>(null);
 
-  const handlePayment = async () => {
-    if (!user) {
-      toast.error('Please sign in to place an order');
-      return;
-    }
-
-    // Validate checkout items
-    if (!checkoutItems || checkoutItems.length === 0) {
-      toast.error('No items in cart. Please add items before checkout.');
-      return;
-    }
-
-    // Validate total amount
-    if (finalTotal <= 0) {
-      toast.error('Invalid order total. Please refresh and try again.');
-      return;
-    }
-
-    // Validate Razorpay is loaded
-    if (!window.Razorpay) {
-      toast.error('Payment gateway not loaded. Please refresh and try again.');
-      return;
-    }
-
-    // Validate shipping details one more time before payment
-    const { fullName, email, phone, address, city, state, pincode } = shippingDetails;
-    if (!fullName?.trim() || !email?.trim() || !phone?.trim() || !address?.trim() || !city?.trim() || !state?.trim() || !pincode?.trim()) {
-      toast.error('Shipping details are incomplete. Please go back and fill all required fields.');
-      setStep('details');
-      return;
-    }
-
-    setPaymentLoading(true);
-
-    try {
-      // Save user profile for future autofill
-      await saveUserProfile();
-
-      // Generate order number
-      const orderNumber = `VT${Date.now().toString().slice(-6)}`;
-
-      // Create Razorpay order on backend for security
-      const response = await fetch('/api/create-razorpay-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: finalTotal,
-          currency: 'INR',
-          receipt: orderNumber,
-          notes: {
-            name: shippingDetails.fullName,
-            email: shippingDetails.email,
-            phone: shippingDetails.phone,
-            address: `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} - ${shippingDetails.pincode}`
-          }
-        })
-      });
-      const data = await response.json();
-      if (!response.ok || !data.order || !data.order.id) {
-        throw new Error(data.error || 'Failed to create payment order');
-      }
-
-      // Razorpay configuration
-      const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YourTestKeyHere',
-        amount: finalTotal,
-        currency: 'INR',
-        name: 'VedhaTrendz',
-        description: `Order #${orderNumber}`,
-        order_id: data.order.id, // Secure order id from backend
-        prefill: {
-          name: shippingDetails.fullName,
-          email: shippingDetails.email,
-          contact: shippingDetails.phone,
-        },
-        theme: {
-          color: '#8B5A3C',
-        },
-        modal: {
-          escape: false,
-          ondismiss: () => {
-            setPaymentLoading(false);
-            toast.error('Payment cancelled');
-          }
-        },
-        handler: async (response: any) => {
-          try {
-            // Verify signature before proceeding
-            const verifyResponse = await fetch('/api/verify-razorpay-signature', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature
-              })
-            });
-
-            const verifyData = await verifyResponse.json();
-            
-            if (!verifyResponse.ok || !verifyData.valid) {
-              throw new Error('Payment signature verification failed');
-            }
-
-            // If verification successful, proceed with order creation
-            await handleOrderCreation(response.razorpay_payment_id, orderNumber);
-          } catch (error) {
-            toast.error('Payment verification failed. Please contact support.');
-            console.error('Payment verification error:', error);
-          }
-        },
-        notes: {
-          address: `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} - ${shippingDetails.pincode}`,
-        },
-      };
-
-      // Store current checkout state
-      setStoredCheckoutState({
-        step,
-        shippingDetails
-      });
-
-      // Close the checkout dialog
-      onClose();
-
-      // Small delay to ensure checkout is closed
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Store original styles for cleanup
-      (window as any).originalStyles = {
-        bodyPointerEvents: document.body.style.pointerEvents,
-        htmlPointerEvents: document.documentElement.style.pointerEvents,
-        bodyOverflow: document.body.style.overflow,
-      };
-
-      // Open Razorpay modal
-      const razorpay = new window.Razorpay({
-        ...options,
-        modal: {
-          ...options.modal,
-          backdropClose: false,  // Prevent closing on backdrop click
-          escape: false, // Prevent escape key from closing
-          animation: false, // Disable animation to prevent focus issues
-          onopen: () => {
-            const focusRazorpayFrame = () => {
-              const rzpFrame = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement;
-              if (rzpFrame) {
-                // Set frame styles
-                rzpFrame.style.zIndex = '999999';
-                
-                // Simple one-time focus
-                setTimeout(() => {
-                  rzpFrame.focus();
-                }, 100);
-                
-                // Stop trying to find the frame
-                return;
-              }
-              
-              // Retry if frame not found
-              setTimeout(focusRazorpayFrame, 10);
-            };
-            focusRazorpayFrame();
-          },
-          ondismiss: () => {
-            // Restore original styles
-            if ((window as any).originalStyles) {
-              document.body.style.pointerEvents = (window as any).originalStyles.bodyPointerEvents;
-              document.documentElement.style.pointerEvents = (window as any).originalStyles.htmlPointerEvents;
-              document.body.style.overflow = (window as any).originalStyles.bodyOverflow;
-              delete (window as any).originalStyles;
-            }
-            
-            // Remove any overlay
-            if ((window as any).rzpOverlay) {
-              if (document.body.contains((window as any).rzpOverlay)) {
-                document.body.removeChild((window as any).rzpOverlay);
-              }
-              delete (window as any).rzpOverlay;
-            }
-
-            // Re-enable all focusable elements
-            const focusableElements = document.querySelectorAll('[disabled="true"]');
-            focusableElements.forEach(el => {
-              (el as HTMLElement).removeAttribute('disabled');
-              (el as HTMLElement).style.pointerEvents = '';
-            });
-
-            // Remove inert attribute from dialogs
-            const allDialogs = document.querySelectorAll('[role="dialog"]');
-            allDialogs.forEach(dialog => {
-              dialog.removeAttribute('inert');
-              dialog.removeAttribute('aria-hidden');
-              (dialog as HTMLElement).style.pointerEvents = '';
-              (dialog as HTMLElement).style.visibility = '';
-              (dialog as HTMLElement).style.display = '';
-              (dialog as HTMLElement).style.opacity = '';
-            });
-
-            // Ensure body scroll is restored
-            document.body.style.overflow = '';
-            document.body.style.pointerEvents = '';
-            document.documentElement.style.pointerEvents = '';
-
-            setPaymentLoading(false);
-            toast.error('Payment cancelled');
-            
-            // Reopen the checkout dialog with stored state
-            if (storedCheckoutState) {
-              onClose(); // Close first to avoid flash
-              setTimeout(() => {
-                setStep(storedCheckoutState.step);
-                setShippingDetails(storedCheckoutState.shippingDetails);
-                onOpen();
-                setStoredCheckoutState(null);
-              }, 100);
-            }
-          }
-        }
-      });
-      razorpay.open();
-
-    } catch (error) {
-      toast.error('Failed to initialize payment. Please try again.');
-      setPaymentLoading(false);
-    }
-  };
-
-  const handleOrderCreation = async (paymentId: string, orderNumber: string) => {
+  // Define handleOrderCreation with useCallback to ensure stable reference
+  const handleOrderCreation = useCallback(async (paymentId: string, orderNumber: string) => {
+    console.log('handleOrderCreation called with:', { paymentId, orderNumber });
     setPaymentLoading(true);
     
     try {
@@ -668,7 +442,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
       console.error('Order creation error:', error);
       
       // Check if the error is from email service only
-      if (error.message?.includes('email') || error.message?.includes('smtp')) {
+      if (error?.message?.includes('email') || error?.message?.includes('smtp')) {
         // If it's just an email error, the order was actually created successfully
         toast.success('Order placed successfully! (Email notification delayed)');
         setStep('confirmation');
@@ -678,7 +452,260 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
     } finally {
       setPaymentLoading(false);
     }
-  };
+  }, [user, shippingDetails, checkoutItems, totalPrice, shippingFee, finalTotal, buyNowItem, clearCart, onClose, onOpen, setStep, setPaymentLoading]);
+
+  const handlePayment = useCallback(async () => {
+    if (!user) {
+      toast.error('Please sign in to place an order');
+      return;
+    }
+
+    // Validate checkout items
+    if (!checkoutItems || checkoutItems.length === 0) {
+      toast.error('No items in cart. Please add items before checkout.');
+      return;
+    }
+
+    // Validate total amount
+    if (finalTotal <= 0) {
+      toast.error('Invalid order total. Please refresh and try again.');
+      return;
+    }
+
+    // Validate Razorpay is loaded
+    if (!window.Razorpay) {
+      toast.error('Payment gateway not loaded. Please refresh and try again.');
+      return;
+    }
+
+    // Validate Razorpay key is configured
+    if (!import.meta.env.VITE_RAZORPAY_KEY_ID) {
+      toast.error('Payment system configuration error. Please contact support.');
+      return;
+    }
+
+    // Validate handleOrderCreation is available
+    if (typeof handleOrderCreation !== 'function') {
+      console.error('handleOrderCreation is not a function:', typeof handleOrderCreation);
+      toast.error('Order processing system error. Please refresh and try again.');
+      return;
+    }
+
+    // Validate shipping details one more time before payment
+    const { fullName, email, phone, address, city, state, pincode } = shippingDetails;
+    if (!fullName?.trim() || !email?.trim() || !phone?.trim() || !address?.trim() || !city?.trim() || !state?.trim() || !pincode?.trim()) {
+      toast.error('Shipping details are incomplete. Please go back and fill all required fields.');
+      setStep('details');
+      return;
+    }
+
+    setPaymentLoading(true);
+
+    try {
+      // Save user profile for future autofill
+      await saveUserProfile();
+
+      // Generate order number
+      const orderNumber = `VT${Date.now().toString().slice(-6)}`;
+
+      // Create Razorpay order on backend for security
+      const response = await fetch('/api/create-razorpay-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalTotal,
+          currency: 'INR',
+          receipt: orderNumber,
+          notes: {
+            name: shippingDetails.fullName,
+            email: shippingDetails.email,
+            phone: shippingDetails.phone,
+            address: `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} - ${shippingDetails.pincode}`
+          }
+        })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.order || !data.order.id) {
+        throw new Error(data.error || 'Failed to create payment order');
+      }
+
+      // Razorpay configuration
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: finalTotal,
+        currency: 'INR',
+        name: 'VedhaTrendz',
+        description: `Order #${orderNumber}`,
+        order_id: data.order.id, // Secure order id from backend
+        prefill: {
+          name: shippingDetails.fullName,
+          email: shippingDetails.email,
+          contact: shippingDetails.phone,
+        },
+        theme: {
+          color: '#8B5A3C',
+        },
+        modal: {
+          escape: false,
+          ondismiss: () => {
+            setPaymentLoading(false);
+            toast.error('Payment cancelled');
+          }
+        },
+        handler: async (response: any) => {
+          console.log('Razorpay payment successful:', response);
+          try {
+            // Verify signature before proceeding
+            const verifyResponse = await fetch('/api/verify-razorpay-signature', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+
+            const verifyData = await verifyResponse.json();
+            
+            if (!verifyResponse.ok || !verifyData.valid) {
+              throw new Error('Payment signature verification failed');
+            }
+
+            // If verification successful, proceed with order creation
+            // Use the callback directly to ensure it's available
+            console.log('handleOrderCreation type:', typeof handleOrderCreation);
+            if (typeof handleOrderCreation === 'function') {
+              console.log('Calling handleOrderCreation...');
+              await handleOrderCreation(response.razorpay_payment_id, orderNumber);
+            } else {
+              console.error('handleOrderCreation is not a function:', handleOrderCreation);
+              throw new Error('Order creation function not available');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            toast.error('Payment verification failed. Please contact support.');
+            setPaymentLoading(false);
+          }
+        },
+        notes: {
+          address: `${shippingDetails.address}, ${shippingDetails.city}, ${shippingDetails.state} - ${shippingDetails.pincode}`,
+        },
+      };
+
+      // Store current checkout state
+      setStoredCheckoutState({
+        step,
+        shippingDetails
+      });
+
+      // Close the checkout dialog
+      onClose();
+
+      // Small delay to ensure checkout is closed
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Store original styles for cleanup
+      (window as any).originalStyles = {
+        bodyPointerEvents: document.body.style.pointerEvents,
+        htmlPointerEvents: document.documentElement.style.pointerEvents,
+        bodyOverflow: document.body.style.overflow,
+      };
+
+      // Open Razorpay modal
+      const razorpay = new window.Razorpay({
+        ...options,
+        modal: {
+          ...options.modal,
+          backdropClose: false,  // Prevent closing on backdrop click
+          escape: false, // Prevent escape key from closing
+          animation: false, // Disable animation to prevent focus issues
+          onopen: () => {
+            const focusRazorpayFrame = () => {
+              const rzpFrame = document.querySelector('iframe[src*="razorpay"]') as HTMLIFrameElement;
+              if (rzpFrame) {
+                // Set frame styles
+                rzpFrame.style.zIndex = '999999';
+                
+                // Simple one-time focus
+                setTimeout(() => {
+                  rzpFrame.focus();
+                }, 100);
+                
+                // Stop trying to find the frame
+                return;
+              }
+              
+              // Retry if frame not found
+              setTimeout(focusRazorpayFrame, 10);
+            };
+            focusRazorpayFrame();
+          },
+          ondismiss: () => {
+            // Call the cleanup function we defined in useEffect
+            const cleanup = () => {
+              // Clean up any leftover Razorpay elements
+              if ((window as any).originalStyles) {
+                document.body.style.pointerEvents = (window as any).originalStyles.bodyPointerEvents;
+                document.documentElement.style.pointerEvents = (window as any).originalStyles.htmlPointerEvents;
+                document.body.style.overflow = (window as any).originalStyles.bodyOverflow;
+                delete (window as any).originalStyles;
+              }
+
+              if ((window as any).rzpOverlay) {
+                if (document.body.contains((window as any).rzpOverlay)) {
+                  document.body.removeChild((window as any).rzpOverlay);
+                }
+                delete (window as any).rzpOverlay;
+              }
+
+              // Re-enable all elements and restore styles
+              document.body.style.overflow = '';
+              document.body.style.pointerEvents = '';
+              document.documentElement.style.pointerEvents = '';
+
+              const focusableElements = document.querySelectorAll('[disabled="true"]');
+              focusableElements.forEach(el => {
+                (el as HTMLElement).removeAttribute('disabled');
+                (el as HTMLElement).style.pointerEvents = '';
+              });
+
+              const allDialogs = document.querySelectorAll('[role="dialog"]');
+              allDialogs.forEach(dialog => {
+                dialog.removeAttribute('inert');
+                dialog.removeAttribute('aria-hidden');
+                (dialog as HTMLElement).style.pointerEvents = '';
+                (dialog as HTMLElement).style.visibility = '';
+                (dialog as HTMLElement).style.display = '';
+                (dialog as HTMLElement).style.opacity = '';
+              });
+            };
+
+            cleanup();
+
+            setPaymentLoading(false);
+            toast.error('Payment cancelled');
+            
+            // Reopen the checkout dialog with stored state
+            if (storedCheckoutState) {
+              onClose(); // Close first to avoid flash
+              setTimeout(() => {
+                setStep(storedCheckoutState.step);
+                setShippingDetails(storedCheckoutState.shippingDetails);
+                onOpen();
+                setStoredCheckoutState(null);
+              }, 100);
+            }
+          }
+        }
+      });
+      razorpay.open();
+
+    } catch (error) {
+      toast.error('Failed to initialize payment. Please try again.');
+      setPaymentLoading(false);
+    }
+  }, [user, checkoutItems, finalTotal, handleOrderCreation, shippingDetails, step, onClose, onOpen, setStoredCheckoutState, setPaymentLoading]);
 
   const handleClose = () => {
     setStep('auth');
