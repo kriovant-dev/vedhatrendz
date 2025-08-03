@@ -30,7 +30,9 @@ interface Product {
   colors: string[];
   sizes: string[];
   images: string[];
+  color_images?: { [color: string]: string[] }; // New: color-specific images
   image_file_ids?: string[]; // ImageKit file IDs for deletion
+  color_image_file_ids?: { [color: string]: string[] }; // New: color-specific file IDs
   stock_quantity: number | null;
   rating: number | null;
   reviews_count: number | null;
@@ -59,9 +61,11 @@ interface ProductFormData {
   is_featured_hero: boolean;
 }
 
-interface ProductEditData extends Omit<Product, 'images' | 'image_file_ids'> {
+interface ProductEditData extends Omit<Product, 'images' | 'image_file_ids' | 'color_images' | 'color_image_file_ids'> {
   images?: string[];
   image_file_ids?: string[];
+  color_images?: { [color: string]: string[] };
+  color_image_file_ids?: { [color: string]: string[] };
 }
 
 // Type for creating new products - only required fields
@@ -77,7 +81,9 @@ interface CreateProductData {
   colors?: string[];
   sizes?: string[];
   images?: string[];
+  color_images?: { [color: string]: string[] }; // New: color-specific images
   image_file_ids?: string[]; // ImageKit file IDs for deletion
+  color_image_file_ids?: { [color: string]: string[] }; // New: color-specific file IDs
   stock_quantity?: number | null;
   is_new?: boolean | null;
   is_bestseller?: boolean | null;
@@ -106,6 +112,7 @@ const ProductManager = () => {
   });
 
   const [uploadedImages, setUploadedImages] = useState<ImageUploadResult[]>([]);
+  const [colorImages, setColorImages] = useState<{ [color: string]: ImageUploadResult[] }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -339,6 +346,17 @@ const ProductManager = () => {
       return;
     }
 
+    // Prepare color images data
+    const colorImagesData: { [color: string]: string[] } = {};
+    const colorImageFileIds: { [color: string]: string[] } = {};
+    
+    Object.entries(colorImages).forEach(([color, images]) => {
+      if (images.length > 0) {
+        colorImagesData[color] = images.map(img => img.url);
+        colorImageFileIds[color] = images.map(img => img.fileId || '');
+      }
+    });
+
     setIsSubmitting(true);
 
     try {
@@ -354,7 +372,9 @@ const ProductManager = () => {
         colors: formData.colors,
         sizes: formData.sizes.split(',').map(s => s.trim()).filter(s => s),
         images: finalImages,
+        color_images: Object.keys(colorImagesData).length > 0 ? colorImagesData : undefined,
         image_file_ids: uploadedImages.map(img => img.fileId || ''), // Store ImageKit file IDs
+        color_image_file_ids: Object.keys(colorImageFileIds).length > 0 ? colorImageFileIds : undefined,
         stock_quantity: parseInt(formData.stock_quantity) || 0,
         is_new: formData.is_new,
         is_bestseller: formData.is_bestseller,
@@ -575,6 +595,39 @@ const ProductManager = () => {
                   </div>
                 )}
               </div>
+
+              {/* Color-specific Images */}
+              {formData.colors.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium">Color-Specific Images</label>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Upload images for each color variant. These will be shown when users select specific colors.
+                  </p>
+                  <div className="space-y-4">
+                    {formData.colors.map((color) => (
+                      <div key={color} className="border rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div 
+                            className="w-4 h-4 rounded border border-gray-300"
+                            style={{ backgroundColor: color.toLowerCase() }}
+                          />
+                          <h4 className="font-medium">{color} Images</h4>
+                        </div>
+                        <MultiImageUpload
+                          onImagesUploaded={(images) => {
+                            setColorImages(prev => ({
+                              ...prev,
+                              [color]: images
+                            }));
+                          }}
+                          existingImages={colorImages[color] || []}
+                          maxImages={5}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="text-sm font-medium">Stock Quantity</label>

@@ -27,6 +27,7 @@ interface Product {
   colors: string[];
   sizes: string[];
   images: string[];
+  color_images?: { [color: string]: string[] };
   is_new: boolean;
   is_bestseller: boolean;
   stock_quantity: number;
@@ -67,6 +68,18 @@ const ProductDetail = () => {
     }
   }, [product]);
 
+  useEffect(() => {
+    // Reset image index when color changes
+    setCurrentImageIndex(0);
+  }, [selectedColor]);
+
+  const getDisplayImages = () => {
+    if (product?.color_images && selectedColor && product.color_images[selectedColor]) {
+      return product.color_images[selectedColor];
+    }
+    return product?.images || [];
+  };
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -104,6 +117,8 @@ const ProductDetail = () => {
       return;
     }
     
+    const displayImages = getDisplayImages();
+    
     addToCart({
       productId: product.id,
       name: product.name,
@@ -111,7 +126,7 @@ const ProductDetail = () => {
       color: selectedColor,
       size: selectedSize,
       quantity: quantity,
-      image: product.images?.[0]
+      image: displayImages[0] || product.images?.[0] || ''
     });
     
     toast.success(`Added ${quantity} item(s) to cart!`);
@@ -137,12 +152,14 @@ const ProductDetail = () => {
       removeFromWishlist(product.id);
       toast.success('Removed from wishlist!');
     } else {
+      const displayImages = getDisplayImages();
+      
       addToWishlist({
         productId: product.id,
         name: product.name,
         price: product.price,
         originalPrice: product.original_price,
-        image: product.images?.[0] || '',
+        image: displayImages[0] || product.images?.[0] || '',
         category: product.category,
         colors: product.colors || [],
         sizes: product.sizes || []
@@ -258,9 +275,9 @@ const ProductDetail = () => {
           {/* Product Images */}
           <div className="space-y-3 sm:space-y-4">
             <div className="aspect-[3/4] rounded-lg overflow-hidden bg-muted">
-              {product.images && product.images.length > 0 ? (
+              {getDisplayImages().length > 0 ? (
                 <img
-                  src={product.images[currentImageIndex]}
+                  src={getDisplayImages()[currentImageIndex]}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
@@ -274,9 +291,9 @@ const ProductDetail = () => {
               )}
             </div>
             
-            {product.images && product.images.length > 1 && (
+            {getDisplayImages().length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {product.images.map((image, index) => (
+                {getDisplayImages().map((image, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
