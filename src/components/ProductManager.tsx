@@ -33,6 +33,8 @@ interface Product {
   color_images?: { [color: string]: string[] }; // New: color-specific images
   image_file_ids?: string[]; // ImageKit file IDs for deletion
   color_image_file_ids?: { [color: string]: string[] }; // New: color-specific file IDs
+  delivery_days_min: number | null; // Minimum delivery days
+  delivery_days_max: number | null; // Maximum delivery days (for range)
   stock_quantity: number | null;
   rating: number | null;
   reviews_count: number | null;
@@ -55,6 +57,8 @@ interface ProductFormData {
   colors: string[];
   sizes: string;
   images: string; // Keep for backward compatibility
+  delivery_days_min: string;
+  delivery_days_max: string;
   stock_quantity: string;
   is_new: boolean;
   is_bestseller: boolean;
@@ -81,9 +85,11 @@ interface CreateProductData {
   colors?: string[];
   sizes?: string[];
   images?: string[];
-  color_images?: { [color: string]: string[] }; // New: color-specific images
+  color_images?: { [color: string]: string[] }; // Optional, only include if has data
   image_file_ids?: string[]; // ImageKit file IDs for deletion
-  color_image_file_ids?: { [color: string]: string[] }; // New: color-specific file IDs
+  color_image_file_ids?: { [color: string]: string[] }; // Optional, only include if has data
+  delivery_days_min?: number | null;
+  delivery_days_max?: number | null;
   stock_quantity?: number | null;
   is_new?: boolean | null;
   is_bestseller?: boolean | null;
@@ -105,6 +111,8 @@ const ProductManager = () => {
     colors: [],
     sizes: 'S,M,L,XL',
     images: '',
+    delivery_days_min: '',
+    delivery_days_max: '',
     stock_quantity: '0',
     is_new: false,
     is_bestseller: false,
@@ -297,12 +305,15 @@ const ProductManager = () => {
       colors: [],
       sizes: 'S,M,L,XL',
       images: '',
+      delivery_days_min: '',
+      delivery_days_max: '',
       stock_quantity: '0',
       is_new: false,
       is_bestseller: false,
       is_featured_hero: false,
     });
     setUploadedImages([]);
+    setColorImages({});
   };
 
   const handleEdit = (product: Product) => {
@@ -319,6 +330,8 @@ const ProductManager = () => {
       colors: product.colors || [],
       sizes: product.sizes.join(','),
       images: product.images.join(','),
+      delivery_days_min: product.delivery_days_min?.toString() || '',
+      delivery_days_max: product.delivery_days_max?.toString() || '',
       stock_quantity: product.stock_quantity?.toString() || '0',
       is_new: product.is_new || false,
       is_bestseller: product.is_bestseller || false,
@@ -360,7 +373,8 @@ const ProductManager = () => {
     setIsSubmitting(true);
 
     try {
-      const productData: CreateProductData = {
+      // Prepare product data, filtering out undefined values
+      const baseProductData: CreateProductData = {
         name: formData.name,
         product_code: formData.product_code,
         category: formData.category,
@@ -372,14 +386,28 @@ const ProductManager = () => {
         colors: formData.colors,
         sizes: formData.sizes.split(',').map(s => s.trim()).filter(s => s),
         images: finalImages,
-        color_images: Object.keys(colorImagesData).length > 0 ? colorImagesData : undefined,
         image_file_ids: uploadedImages.map(img => img.fileId || ''), // Store ImageKit file IDs
-        color_image_file_ids: Object.keys(colorImageFileIds).length > 0 ? colorImageFileIds : undefined,
+        delivery_days_min: formData.delivery_days_min ? parseInt(formData.delivery_days_min) : null,
+        delivery_days_max: formData.delivery_days_max ? parseInt(formData.delivery_days_max) : null,
         stock_quantity: parseInt(formData.stock_quantity) || 0,
         is_new: formData.is_new,
         is_bestseller: formData.is_bestseller,
         is_featured_hero: formData.is_featured_hero,
       };
+
+      // Only add color_images and color_image_file_ids if they have data
+      if (Object.keys(colorImagesData).length > 0) {
+        baseProductData.color_images = colorImagesData;
+      }
+      
+      if (Object.keys(colorImageFileIds).length > 0) {
+        baseProductData.color_image_file_ids = colorImageFileIds;
+      }
+
+      // Filter out undefined values to avoid Firebase errors
+      const productData = Object.fromEntries(
+        Object.entries(baseProductData).filter(([_, value]) => value !== undefined)
+      ) as CreateProductData;
 
       if (editingProduct) {
         updateProductMutation.mutate({ id: editingProduct.id, updates: productData });
@@ -636,6 +664,41 @@ const ProductManager = () => {
                   value={formData.stock_quantity}
                   onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
                 />
+              </div>
+
+              {/* Delivery Date Fields */}
+              <div>
+                <label className="text-sm font-medium">Delivery Time</label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Set the delivery timeframe for this product
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Minimum Days</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={formData.delivery_days_min}
+                      onChange={(e) => setFormData({ ...formData, delivery_days_min: e.target.value })}
+                      placeholder="e.g., 2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Maximum Days (Optional)</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={formData.delivery_days_max}
+                      onChange={(e) => setFormData({ ...formData, delivery_days_max: e.target.value })}
+                      placeholder="e.g., 3"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Leave max days empty for single day delivery (e.g., "Will be delivered in 4 days")
+                </p>
               </div>
 
               <div className="flex gap-4">

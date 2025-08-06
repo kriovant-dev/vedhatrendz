@@ -1,6 +1,8 @@
 // Frontend Email Service for VedhaTrendz
 // This service communicates with the backend email server
 
+import { getDeliveryText } from '@/utils/deliveryUtils';
+
 interface OrderEmailData {
   orderNumber: string;
   customerName: string;
@@ -12,6 +14,8 @@ interface OrderEmailData {
     quantity: number;
     color: string;
     size: string;
+    deliveryDaysMin?: number | null;
+    deliveryDaysMax?: number | null;
   }>;
   totalAmount: number;
   shippingAddress: {
@@ -51,17 +55,42 @@ class EmailService {
   }
 
   private generateOrderEmailHTML(orderData: OrderEmailData): string {
-    const itemsHTML = orderData.items.map(item => `
-      <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #eee;">
-          <strong>${item.name}</strong><br>
-          <small>Color: ${item.color} | Size: ${item.size}</small>
-        </td>
-        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${this.formatPrice(item.price)}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${this.formatPrice(item.price * item.quantity)}</td>
-      </tr>
-    `).join('');
+    const itemsHTML = orderData.items.map(item => {
+      const deliveryInfo = item.deliveryDaysMin ? 
+        `<br><small style="color: #28a745;"><strong>📦 ${getDeliveryText(item.deliveryDaysMin, item.deliveryDaysMax, 'short')}</strong></small>` : 
+        '';
+      
+      return `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">
+            <strong>${item.name}</strong><br>
+            <small>Color: ${item.color} | Size: ${item.size}</small>
+            ${deliveryInfo}
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${this.formatPrice(item.price)}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${this.formatPrice(item.price * item.quantity)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Calculate expected delivery date for the order
+    const maxDeliveryDays = Math.max(
+      ...orderData.items
+        .filter(item => item.deliveryDaysMax)
+        .map(item => item.deliveryDaysMax || 0)
+    );
+    
+    const expectedDeliveryDate = new Date();
+    expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + maxDeliveryDays);
+    const formattedDeliveryDate = maxDeliveryDays > 0 
+      ? expectedDeliveryDate.toLocaleDateString('en-IN', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      : null;
 
     return `
       <!DOCTYPE html>
@@ -94,6 +123,7 @@ class EmailService {
           <div class="content">
             <div class="alert">
               <strong>⚡ Action Required:</strong> A new order has been placed and requires your attention.
+              ${formattedDeliveryDate ? `<br><strong>📅 Expected Delivery Date: ${formattedDeliveryDate}</strong>` : ''}
             </div>
 
             <div class="order-details">
@@ -156,16 +186,41 @@ class EmailService {
   }
 
   private generateCustomerConfirmationHTML(orderData: OrderEmailData): string {
-    const itemsHTML = orderData.items.map(item => `
-      <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #eee;">
-          <strong>${item.name}</strong><br>
-          <small style="color: #666;">Color: ${item.color} | Size: ${item.size}</small>
-        </td>
-        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${this.formatPrice(item.price * item.quantity)}</td>
-      </tr>
-    `).join('');
+    const itemsHTML = orderData.items.map(item => {
+      const deliveryInfo = item.deliveryDaysMin ? 
+        `<br><small style="color: #28a745;"><strong>📦 ${getDeliveryText(item.deliveryDaysMin, item.deliveryDaysMax)}</strong></small>` : 
+        '';
+      
+      return `
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #eee;">
+            <strong>${item.name}</strong><br>
+            <small style="color: #666;">Color: ${item.color} | Size: ${item.size}</small>
+            ${deliveryInfo}
+          </td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${this.formatPrice(item.price * item.quantity)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Calculate expected delivery dates for the order
+    const maxDeliveryDays = Math.max(
+      ...orderData.items
+        .filter(item => item.deliveryDaysMax)
+        .map(item => item.deliveryDaysMax || 0)
+    );
+    
+    const expectedDeliveryDate = new Date();
+    expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + maxDeliveryDays);
+    const formattedDeliveryDate = maxDeliveryDays > 0 
+      ? expectedDeliveryDate.toLocaleDateString('en-IN', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      : null;
 
     return `
       <!DOCTYPE html>
@@ -197,6 +252,7 @@ class EmailService {
           <div class="content">
             <div class="success-message">
               <strong>🎉 Your order has been successfully placed!</strong> We're excited to prepare your beautiful sarees for delivery.
+              ${formattedDeliveryDate ? `<br><br><strong>📅 Expected Delivery Date: ${formattedDeliveryDate}</strong>` : ''}
             </div>
             
             <div class="order-details">
@@ -233,7 +289,7 @@ class EmailService {
               <ul style="margin: 0; padding-left: 20px;">
                 <li>We'll process your order within 1-2 business days</li>
                 <li>You'll receive a shipping confirmation email with tracking details</li>
-                <li>Your order will be delivered within 5-7 business days</li>
+                <li>Your items will be delivered as per the timelines shown above</li>
                 <li>Payment will be collected upon delivery (COD)</li>
               </ul>
             </div>
@@ -346,14 +402,33 @@ class EmailService {
   }
 
   private generateOrderEmailText(orderData: OrderEmailData): string {
-    const itemsText = orderData.items.map(item => 
-      `- ${item.name} (${item.color}, ${item.size}) x${item.quantity} = ${this.formatPrice(item.price * item.quantity)}`
-    ).join('\n');
+    const itemsText = orderData.items.map(item => {
+      const deliveryInfo = item.deliveryDaysMin ? ` (📦 ${getDeliveryText(item.deliveryDaysMin, item.deliveryDaysMax, 'short')})` : '';
+      return `- ${item.name} (${item.color}, ${item.size}) x${item.quantity} = ${this.formatPrice(item.price * item.quantity)}${deliveryInfo}`;
+    }).join('\n');
+
+    // Calculate expected delivery date
+    const maxDeliveryDays = Math.max(
+      ...orderData.items
+        .filter(item => item.deliveryDaysMax)
+        .map(item => item.deliveryDaysMax || 0)
+    );
+    
+    const expectedDeliveryDate = new Date();
+    expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + maxDeliveryDays);
+    const formattedDeliveryDate = maxDeliveryDays > 0 
+      ? expectedDeliveryDate.toLocaleDateString('en-IN', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      : null;
 
     return `
 🛒 NEW ORDER RECEIVED - ${orderData.orderNumber}
 
-Customer Information:
+${formattedDeliveryDate ? `📅 Expected Delivery Date: ${formattedDeliveryDate}\n` : ''}Customer Information:
 👤 Name: ${orderData.customerName}
 📧 Email: ${orderData.customerEmail}
 📞 Phone: ${orderData.customerPhone}
@@ -382,9 +457,28 @@ Please log in to the admin panel to manage this order.
   }
 
   private generateCustomerConfirmationText(orderData: OrderEmailData): string {
-    const itemsText = orderData.items.map(item => 
-      `- ${item.name} (${item.color}, ${item.size}) x${item.quantity} = ${this.formatPrice(item.price * item.quantity)}`
-    ).join('\n');
+    const itemsText = orderData.items.map(item => {
+      const deliveryInfo = item.deliveryDaysMin ? ` (📦 ${getDeliveryText(item.deliveryDaysMin, item.deliveryDaysMax)})` : '';
+      return `- ${item.name} (${item.color}, ${item.size}) x${item.quantity} = ${this.formatPrice(item.price * item.quantity)}${deliveryInfo}`;
+    }).join('\n');
+
+    // Calculate expected delivery date
+    const maxDeliveryDays = Math.max(
+      ...orderData.items
+        .filter(item => item.deliveryDaysMax)
+        .map(item => item.deliveryDaysMax || 0)
+    );
+    
+    const expectedDeliveryDate = new Date();
+    expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + maxDeliveryDays);
+    const formattedDeliveryDate = maxDeliveryDays > 0 
+      ? expectedDeliveryDate.toLocaleDateString('en-IN', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      : null;
 
     return `
 ✅ ORDER CONFIRMATION #${orderData.orderNumber}
@@ -392,6 +486,8 @@ Please log in to the admin panel to manage this order.
 Dear ${orderData.customerName},
 
 🎉 Thank you for your purchase! Your order has been successfully placed.
+
+${formattedDeliveryDate ? `📅 Expected Delivery Date: ${formattedDeliveryDate}\n` : ''}
 
 📦 Order Summary:
 ${itemsText}
@@ -406,7 +502,7 @@ ${orderData.shippingAddress.country}
 📋 What's Next?
 - We'll process your order within 1-2 business days
 - You'll receive a shipping confirmation email with tracking details
-- Your order will be delivered within 5-7 business days
+- Your items will be delivered as per the timelines shown above
 - Payment will be collected upon delivery (COD)
 
 Questions? Contact us at vedhatrendz@gmail.com

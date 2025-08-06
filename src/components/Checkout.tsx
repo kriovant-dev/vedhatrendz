@@ -344,6 +344,37 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
     setPaymentLoading(true);
     
     try {
+      // Fetch product delivery information for email notifications
+      const itemsWithDeliveryInfo = await Promise.all(
+        checkoutItems.map(async (item) => {
+          try {
+            const { data: product } = await FirebaseClient.getByDocumentId('products', item.productId);
+            return {
+              id: item.productId,
+              name: item.name,
+              price: item.price,
+              color: item.color,
+              size: item.size,
+              quantity: item.quantity,
+              deliveryDaysMin: product?.delivery_days_min || null,
+              deliveryDaysMax: product?.delivery_days_max || null
+            };
+          } catch (error) {
+            console.error(`Failed to fetch delivery info for product ${item.productId}:`, error);
+            return {
+              id: item.productId,
+              name: item.name,
+              price: item.price,
+              color: item.color,
+              size: item.size,
+              quantity: item.quantity,
+              deliveryDaysMin: null,
+              deliveryDaysMax: null
+            };
+          }
+        })
+      );
+
       // Create order in Firebase with proper structure matching the database
       const orderData = {
         order_number: orderNumber,
@@ -361,14 +392,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
           size: item.size,
           quantity: item.quantity
         })),
-        items: checkoutItems.map(item => ({
-          productId: item.productId,
-          name: item.name,
-          price: item.price,
-          color: item.color,
-          size: item.size,
-          quantity: item.quantity
-        })),
+        items: itemsWithDeliveryInfo, // Use items with delivery info for emails
         shipping_address: {
           name: shippingDetails.fullName,
           phone: shippingDetails.phone,

@@ -227,7 +227,7 @@ Your order #${orderId} has been shipped via *${provider}*.
 
 🚚 Track your package: *${trackingNumber}*
 
-Thank you for choosing Rang-e-Saree Haven! ✨`;
+Thank you for choosing VedhaTrendz! ✨`;
 
         // Format phone number (remove any non-digits and ensure it starts with country code)
         let phoneNumber = selectedOrder.customer_phone.replace(/\D/g, '');

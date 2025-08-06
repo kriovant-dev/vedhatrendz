@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Products collection - public read, admin write
+    match /products/{productId} {
+      allow read: if true; // Anyone can read products
+      allow write: if request.auth != null && request.auth.token.admin == true; // Only admins can write
+    }
+    
+    // Categories collection - public read, admin write
+    match /categories/{categoryId} {
+      allow read: if true; // Anyone can read categories
+      allow write: if request.auth != null && request.auth.token.admin == true; // Only admins can write
+    }
+    
+    // Orders collection - authenticated users can create, admins can read all
+    match /orders/{orderId} {
+      allow create: if request.auth != null; // Authenticated users can create orders
+      allow read: if request.auth != null && 
+                  (request.auth.token.admin == true || 
+                   request.auth.uid == resource.data.user_id); // Admins or order owner can read
+      allow update: if request.auth != null && request.auth.token.admin == true; // Only admins can update orders
+    }
+    
+    // Users collection - users can read/write their own data, admins can read all
+    match /users/{userId} {
+      allow read: if request.auth != null && 
+                  (request.auth.uid == userId || request.auth.token.admin == true);
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Reviews collection - authenticated users can create, public read
+    match /reviews/{reviewId} {
+      allow read: if true; // Anyone can read reviews
+      allow create: if request.auth != null; // Authenticated users can create reviews
+      allow update, delete: if request.auth != null && 
+                            (request.auth.uid == resource.data.user_id || 
+                             request.auth.token.admin == true); // Author or admin can modify
+    }
+    
+    // Admin collections - admin only
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Analytics collection - admin only
+    match /analytics/{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.admin == true;
+    }
+  }
+}

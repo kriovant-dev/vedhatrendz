@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Starting Rang-e-Saree Haven Application with Firebase"
+echo "🚀 Starting VedhaTrendz Application with Firebase"
 echo "=================================================="
 
 # Check if .env.local exists

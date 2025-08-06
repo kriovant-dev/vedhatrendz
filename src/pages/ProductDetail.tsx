@@ -14,6 +14,7 @@ import { firebase } from '@/integrations/firebase/client';
 import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { getDeliveryText } from '@/utils/deliveryUtils';
 
 interface Product {
   id: string;
@@ -28,6 +29,8 @@ interface Product {
   sizes: string[];
   images: string[];
   color_images?: { [color: string]: string[] };
+  delivery_days_min: number | null;
+  delivery_days_max: number | null;
   is_new: boolean;
   is_bestseller: boolean;
   stock_quantity: number;
@@ -385,6 +388,19 @@ const ProductDetail = () => {
                   <span className="ml-2 text-muted-foreground">{product.occasion}</span>
                 </div>
               </div>
+
+              {/* Delivery Information */}
+              {(product.delivery_days_min) && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Truck className="h-4 w-4 text-green-600" />
+                    <span className="font-medium text-green-800">Delivery Information</span>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    {getDeliveryText(product.delivery_days_min, product.delivery_days_max)}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Color Selection */}
@@ -513,6 +529,7 @@ const ProductDetail = () => {
       
       <Checkout
         isOpen={showCheckout}
+        onOpen={() => setShowCheckout(true)}
         onClose={() => setShowCheckout(false)}
         buyNowItem={showCheckout && product ? {
           id: `buynow-${product.id}-${Date.now()}`,
