@@ -440,11 +440,11 @@ const Sarees = () => {
               <CardContent className="p-2 sm:p-4">
                 <h3 className="font-semibold text-sm sm:text-lg mb-1 sm:mb-2 line-clamp-2">{product.name}</h3>
                 <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2 hidden sm:block">{product.fabric}</p>
-                <div className="flex items-center gap-1 mb-2">
+                {/* <div className="flex items-center gap-1 mb-2">
                   <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
                   <span className="text-xs sm:text-sm font-medium">{product.rating || 0}</span>
                   <span className="text-xs sm:text-sm text-muted-foreground">({product.reviews_count || 0})</span>
-                </div>
+                </div> */}
                 <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-4">
                   <span className="font-bold text-sm sm:text-lg">{formatPrice(product.price)}</span>
                   {product.original_price && product.original_price > product.price && (
