@@ -370,7 +370,7 @@ const Sarees = () => {
         {/* Results */}
         <div className="mb-4 sm:mb-6">
           <p className="text-muted-foreground mobile-text">
-            Showing {filteredProducts.length} of {allProducts.length} sarees
+            Showing {filteredProducts.length} of {allProducts.length} products
           </p>
         </div>
 
