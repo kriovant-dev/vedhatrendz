@@ -14,6 +14,8 @@ import { firebase } from '@/integrations/firebase/client';
 import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { ImageKitService } from '@/services/imagekitService';
+import { ResponsiveImage, BlurUpImage, ThumbnailImage } from '@/components/OptimizedImages';
 import { getDeliveryText } from '@/utils/deliveryUtils';
 
 interface Product {
@@ -275,13 +277,15 @@ const ProductDetail = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
-          {/* Product Images */}
+          {/* Product Images - Optimized with ResponsiveImage */}
           <div className="space-y-3 sm:space-y-4">
             <div className="aspect-[3/4] rounded-lg overflow-hidden bg-muted">
               {getDisplayImages().length > 0 ? (
-                <img
+                <BlurUpImage
                   src={getDisplayImages()[currentImageIndex]}
                   alt={product.name}
+                  width={800}
+                  height={1200}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -294,6 +298,7 @@ const ProductDetail = () => {
               )}
             </div>
             
+            {/* Thumbnail Gallery - Optimized with ThumbnailImage */}
             {getDisplayImages().length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {getDisplayImages().map((image, index) => (
@@ -304,10 +309,11 @@ const ProductDetail = () => {
                       currentImageIndex === index ? 'border-primary' : 'border-border'
                     }`}
                   >
-                    <img
+                    <ThumbnailImage
                       src={image}
                       alt={`${product.name} view ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      size={80}
+                      className="w-full h-full"
                     />
                   </button>
                 ))}

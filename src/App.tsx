@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ImageKitProviderWrapper } from "./components/ImageKitProviderWrapper";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 
@@ -35,10 +36,11 @@ const App = () => (
     <AuthProvider>
       <CartProvider>
         <WishlistProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+          <ImageKitProviderWrapper>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/admin" element={<Admin />} />
@@ -157,10 +159,11 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-    </WishlistProvider>
-    </CartProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+            </ImageKitProviderWrapper>
+          </WishlistProvider>
+        </CartProvider>
+      </AuthProvider>
+    </QueryClientProvider>
 );
 
 export default App;

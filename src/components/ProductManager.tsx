@@ -8,7 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MultiImageUpload from '@/components/MultiImageUpload';
 import ColorSelector from '@/components/ColorSelector';
@@ -16,6 +22,7 @@ import { ImageKitService, ImageUploadResult } from '@/services/imagekitService';
 import { CategoryService } from '@/services/categoryService';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import { ThumbnailImage } from '@/components/OptimizedImages';
 
 interface Product {
   id: string;
@@ -125,6 +132,8 @@ const ProductManager = () => {
   const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -255,10 +264,10 @@ const ProductManager = () => {
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
-      // First, get the product to find its image file IDs
+      // First, get the product to find all its image file IDs (both regular and color-specific)
       const { data: product } = await firebase
         .from('products')
-        .select('image_file_ids')
+        .select('image_file_ids, color_image_file_ids')
         .eq('id', productId)
         .single();
 
@@ -271,10 +280,28 @@ const ProductManager = () => {
       
       if (error) throw error;
 
-      // Delete associated images from ImageKit
+      // Create an array to store all file IDs to delete
+      const allFileIdsToDelete: string[] = [];
+
+      // Add main image file IDs if they exist
       if (product && product.image_file_ids && product.image_file_ids.length > 0) {
+        allFileIdsToDelete.push(...product.image_file_ids);
+      }
+
+      // Add color-specific image file IDs if they exist
+      if (product && product.color_image_file_ids) {
+        Object.values(product.color_image_file_ids).forEach(colorFileIds => {
+          if (Array.isArray(colorFileIds) && colorFileIds.length > 0) {
+            allFileIdsToDelete.push(...colorFileIds);
+          }
+        });
+      }
+
+      // Delete all associated images from ImageKit
+      if (allFileIdsToDelete.length > 0) {
         try {
-          await ImageKitService.deleteMultipleImages(product.image_file_ids);
+          const results = await ImageKitService.deleteMultipleImages(allFileIdsToDelete);
+          console.log(`Deleted ${results.filter(Boolean).length} of ${allFileIdsToDelete.length} images from ImageKit`);
         } catch (imageError) {
           console.error('Failed to delete images from ImageKit:', imageError);
           // Don't throw here as the product is already deleted from database
@@ -782,10 +809,11 @@ const ProductManager = () => {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         {product.images && product.images.length > 0 ? (
-                          <img
+                          <ThumbnailImage
                             src={product.images[0]}
                             alt={product.name}
-                            className="w-10 h-10 rounded object-cover"
+                            size={40}
+                            className="w-10 h-10 rounded"
                           />
                         ) : (
                           <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
@@ -840,7 +868,10 @@ const ProductManager = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteProductMutation.mutate(product.id)}
+                          onClick={() => {
+                            setProductToDelete(product);
+                            setShowDeleteConfirmation(true);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -853,6 +884,66 @@ const ProductManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Confirm Delete Product</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {productToDelete && (
+              <div className="flex items-center gap-3 p-3 border rounded-lg">
+                {productToDelete.images && productToDelete.images.length > 0 ? (
+                  <ThumbnailImage
+                    src={productToDelete.images[0]}
+                    alt={productToDelete.name}
+                    size={48}
+                    className="w-12 h-12 rounded"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                    <Package className="h-6 w-6" />
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-bold">{productToDelete.name}</h3>
+                  <div className="text-sm text-muted-foreground">
+                    {productToDelete.product_code} • {productToDelete.category}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="text-muted-foreground text-sm space-y-3">
+              <p>
+                Are you sure you want to delete this product? This action cannot be undone.
+              </p>
+              <p>
+                <strong>All images associated with this product will also be permanently deleted from the ImageKit server.</strong>
+              </p>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-4">
+              <Button variant="outline" onClick={() => setShowDeleteConfirmation(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  if (productToDelete) {
+                    deleteProductMutation.mutate(productToDelete.id);
+                    setShowDeleteConfirmation(false);
+                    setProductToDelete(null);
+                  }
+                }}
+              >
+                Delete Product
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

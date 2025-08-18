@@ -10,6 +10,7 @@ import { firebase } from '@/integrations/firebase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { ImageKitService } from '@/services/imagekitService';
+import { ResponsiveImage, LazyImage } from '@/components/OptimizedImages';
 import { toast } from 'sonner';
 
 interface Product {
@@ -181,17 +182,14 @@ const FeaturedProducts = () => {
               <CardContent className="p-0">
                 {/* Image Container */}
                 <div className="relative aspect-[3/4] overflow-hidden">
-                  {/* Product Image */}
+                  {/* Product Image - Optimized with LazyImage */}
                   {product.images && product.images.length > 0 ? (
-                    <img
-                      src={ImageKitService.getOptimizedImageUrl(product.images[0], { 
-                        width: 400, 
-                        height: 533,
-                        quality: 85,
-                        format: 'webp'
-                      })}
+                    <LazyImage
+                      src={product.images[0]}
                       alt={product.name}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      width={400}
+                      height={533}
+                      className="w-full h-full transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
