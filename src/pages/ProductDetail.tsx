@@ -14,8 +14,8 @@ import { firebase } from '@/integrations/firebase/client';
 import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
-import { ImageKitService } from '@/services/imagekitService';
-import { ResponsiveImage, BlurUpImage, ThumbnailImage } from '@/components/OptimizedImages';
+import { r2Service } from '@/services/cloudflareR2Service';
+import { ResponsiveImage, BlurUpImage, ThumbnailImage } from '@/components/R2OptimizedImages';
 import { getDeliveryText } from '@/utils/deliveryUtils';
 
 interface Product {
@@ -284,8 +284,7 @@ const ProductDetail = () => {
                 <BlurUpImage
                   src={getDisplayImages()[currentImageIndex]}
                   alt={product.name}
-                  width={800}
-                  height={1200}
+                  transformation={{ width: 800, height: 1200, format: 'webp' }}
                   className="w-full h-full object-cover"
                 />
               ) : (

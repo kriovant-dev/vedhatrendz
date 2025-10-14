@@ -3,13 +3,10 @@
     "api/send-email.js": {
       "maxDuration": 30
     },
-    "api/upload-image.js": {
+    "api/upload-r2-image.js": {
       "maxDuration": 30
     },
-    "api/delete-image.js": {
-      "maxDuration": 30
-    },
-    "api/image-details.js": {
+    "api/delete-r2-image.js": {
       "maxDuration": 30
     }
   },

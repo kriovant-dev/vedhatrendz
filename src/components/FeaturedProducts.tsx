@@ -9,8 +9,8 @@ import { Heart, ShoppingBag, Eye } from 'lucide-react';
 import { firebase } from '@/integrations/firebase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
-import { ImageKitService } from '@/services/imagekitService';
-import { ResponsiveImage, LazyImage } from '@/components/OptimizedImages';
+import { r2Service } from '@/services/cloudflareR2Service';
+import { ResponsiveImage, LazyImage } from '@/components/R2OptimizedImages';
 import { toast } from 'sonner';
 
 interface Product {
@@ -90,7 +90,7 @@ const FeaturedProducts = () => {
       color: defaultColor,
       size: defaultSize,
       quantity: 1,
-      image: product.images?.[0] ? ImageKitService.getOptimizedImageUrl(product.images[0], { width: 150, height: 200 }) : undefined
+      image: product.images?.[0] ? r2Service.getOptimizedImageUrl(product.images[0], { width: 150, height: 200 }) : undefined
     });
     
     toast.success(`${product.name} added to cart!`);
@@ -187,8 +187,7 @@ const FeaturedProducts = () => {
                     <LazyImage
                       src={product.images[0]}
                       alt={product.name}
-                      width={400}
-                      height={533}
+                      transformation={{ width: 400, height: 533, format: 'webp' }}
                       className="w-full h-full transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (

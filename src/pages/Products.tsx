@@ -14,7 +14,7 @@ import { firebase } from '@/integrations/firebase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { toast } from 'sonner';
-import { ImageKitService } from '@/services/imagekitService';
+import { r2Service } from '@/services/cloudflareR2Service';
 import { SearchService } from '../services/searchService';
 
 interface Product {
@@ -256,7 +256,7 @@ const Sarees = () => {
       color: defaultColor,
       size: defaultSize,
       quantity: 1,
-      image: product.images?.[0] ? ImageKitService.getOptimizedImageUrl(product.images[0], { width: 150, height: 200 }) : undefined
+      image: product.images?.[0] ? r2Service.getOptimizedImageUrl(product.images[0], { width: 150, height: 200 }) : undefined
     });
 
     toast.success('Added to cart!');
@@ -386,7 +386,7 @@ const Sarees = () => {
               <div className="relative overflow-hidden">
                 {product.images && product.images.length > 0 ? (
                   <img
-                    src={ImageKitService.getOptimizedImageUrl(product.images[0], {
+                    src={r2Service.getOptimizedImageUrl(product.images[0], {
                       width: 400,
                       height: 512,
                       quality: 85,

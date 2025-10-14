@@ -14,9 +14,9 @@
     "start:production": "concurrently \"npm run email-server\" \"npm run preview\""
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.1",
     "@emailjs/browser": "^4.4.1",
     "@hookform/resolvers": "^3.9.0",
-    "@imagekit/react": "^5.0.1",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -55,7 +55,6 @@
     "embla-carousel-react": "^8.3.0",
     "express": "^5.1.0",
     "firebase": "^12.0.0",
-    "imagekit": "^5.0.0",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",

@@ -16,13 +16,12 @@ import {
   DialogTrigger 
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import MultiImageUpload from '@/components/MultiImageUpload';
+import R2MultiImageUpload, { ImageUploadResult } from '@/components/R2MultiImageUpload';
 import ColorSelector from '@/components/ColorSelector';
-import { ImageKitService, ImageUploadResult } from '@/services/imagekitService';
 import { CategoryService } from '@/services/categoryService';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Package } from 'lucide-react';
-import { ThumbnailImage } from '@/components/OptimizedImages';
+import { ThumbnailImage } from '@/components/R2OptimizedImages';
 
 interface Product {
   id: string;
@@ -264,10 +263,10 @@ const ProductManager = () => {
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (productId: string) => {
-      // First, get the product to find all its image file IDs (both regular and color-specific)
+      // First, get the product to find all its image URLs
       const { data: product } = await firebase
         .from('products')
-        .select('image_file_ids, color_image_file_ids')
+        .select('images, color_images')
         .eq('id', productId)
         .single();
 
@@ -280,30 +279,49 @@ const ProductManager = () => {
       
       if (error) throw error;
 
-      // Create an array to store all file IDs to delete
-      const allFileIdsToDelete: string[] = [];
+      // Extract file names from URLs for R2 deletion
+      const allFileNamesToDelete: string[] = [];
 
-      // Add main image file IDs if they exist
-      if (product && product.image_file_ids && product.image_file_ids.length > 0) {
-        allFileIdsToDelete.push(...product.image_file_ids);
-      }
-
-      // Add color-specific image file IDs if they exist
-      if (product && product.color_image_file_ids) {
-        Object.values(product.color_image_file_ids).forEach(colorFileIds => {
-          if (Array.isArray(colorFileIds) && colorFileIds.length > 0) {
-            allFileIdsToDelete.push(...colorFileIds);
+      // Add main image file names if they exist
+      if (product && product.images && product.images.length > 0) {
+        product.images.forEach((url: string) => {
+          const fileName = url.split('/').slice(-2).join('/'); // Get "folder/filename.ext"
+          if (fileName && fileName.includes('/')) {
+            allFileNamesToDelete.push(fileName);
           }
         });
       }
 
-      // Delete all associated images from ImageKit
-      if (allFileIdsToDelete.length > 0) {
+      // Add color-specific image file names if they exist
+      if (product && product.color_images) {
+        Object.values(product.color_images).forEach((colorUrls: any) => {
+          if (Array.isArray(colorUrls) && colorUrls.length > 0) {
+            colorUrls.forEach(url => {
+              const fileName = url.split('/').slice(-2).join('/'); // Get "folder/filename.ext"
+              if (fileName && fileName.includes('/')) {
+                allFileNamesToDelete.push(fileName);
+              }
+            });
+          }
+        });
+      }
+
+      // Delete all associated images from R2
+      if (allFileNamesToDelete.length > 0) {
         try {
-          const results = await ImageKitService.deleteMultipleImages(allFileIdsToDelete);
-          console.log(`Deleted ${results.filter(Boolean).length} of ${allFileIdsToDelete.length} images from ImageKit`);
+          const deletePromises = allFileNamesToDelete.map(fileName =>
+            fetch('/api/delete-r2-image', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileName }),
+            })
+          );
+          
+          const results = await Promise.all(deletePromises);
+          const successCount = results.filter(r => r.ok).length;
+          console.log(`Deleted ${successCount} of ${allFileNamesToDelete.length} images from R2`);
         } catch (imageError) {
-          console.error('Failed to delete images from ImageKit:', imageError);
+          console.error('Failed to delete images from R2:', imageError);
           // Don't throw here as the product is already deleted from database
         }
       }
@@ -388,12 +406,10 @@ const ProductManager = () => {
 
     // Prepare color images data
     const colorImagesData: { [color: string]: string[] } = {};
-    const colorImageFileIds: { [color: string]: string[] } = {};
     
     Object.entries(colorImages).forEach(([color, images]) => {
       if (images.length > 0) {
         colorImagesData[color] = images.map(img => img.url);
-        colorImageFileIds[color] = images.map(img => img.fileId || '');
       }
     });
 
@@ -413,7 +429,6 @@ const ProductManager = () => {
         colors: formData.colors,
         sizes: formData.sizes.split(',').map(s => s.trim()).filter(s => s),
         images: finalImages,
-        image_file_ids: uploadedImages.map(img => img.fileId || ''), // Store ImageKit file IDs
         delivery_days_min: formData.delivery_days_min ? parseInt(formData.delivery_days_min) : null,
         delivery_days_max: formData.delivery_days_max ? parseInt(formData.delivery_days_max) : null,
         stock_quantity: parseInt(formData.stock_quantity) || 0,
@@ -422,13 +437,9 @@ const ProductManager = () => {
         is_featured_hero: formData.is_featured_hero,
       };
 
-      // Only add color_images and color_image_file_ids if they have data
+      // Only add color_images if they have data
       if (Object.keys(colorImagesData).length > 0) {
         baseProductData.color_images = colorImagesData;
-      }
-      
-      if (Object.keys(colorImageFileIds).length > 0) {
-        baseProductData.color_image_file_ids = colorImageFileIds;
       }
 
       // Filter out undefined values to avoid Firebase errors
@@ -632,10 +643,11 @@ const ProductManager = () => {
 
               <div>
                 <label className="text-sm font-medium">Product Images</label>
-                <MultiImageUpload
+                <R2MultiImageUpload
                   onImagesUploaded={setUploadedImages}
                   existingImages={uploadedImages}
                   maxImages={5}
+                  folder="products"
                 />
                 {uploadedImages.length === 0 && formData.images && (
                   <div className="mt-2">
@@ -668,7 +680,7 @@ const ProductManager = () => {
                           />
                           <h4 className="font-medium">{color} Images</h4>
                         </div>
-                        <MultiImageUpload
+                        <R2MultiImageUpload
                           onImagesUploaded={(images) => {
                             setColorImages(prev => ({
                               ...prev,
@@ -677,6 +689,7 @@ const ProductManager = () => {
                           }}
                           existingImages={colorImages[color] || []}
                           maxImages={5}
+                          folder={`products/colors/${color.toLowerCase()}`}
                         />
                       </div>
                     ))}

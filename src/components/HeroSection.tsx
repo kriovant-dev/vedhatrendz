@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Star, Sparkles, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { firebase } from '@/integrations/firebase/client';
 import { useCart } from '@/contexts/CartContext';
-import { ImageKitService } from '@/services/imagekitService';
+import { r2Service } from '@/services/cloudflareR2Service';
 
 interface FeaturedProduct {
   id: string;
@@ -182,7 +182,7 @@ const HeroSection = () => {
                       style={{ minHeight: '400px' }}
                     >
                       <img
-                        src={ImageKitService.getOptimizedImageUrl(currentProduct.images[0], {
+                        src={r2Service.getOptimizedImageUrl(currentProduct.images[0], {
                           width: 600,
                           height: 800,
                           quality: 90
