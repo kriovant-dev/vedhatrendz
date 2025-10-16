@@ -207,9 +207,24 @@ const ProductSearch: React.FC = () => {
                   <div className="relative aspect-square mb-4 rounded-lg overflow-hidden bg-muted">
                     {product.images && product.images.length > 0 ? (
                       <img
-                        src={product.images[0]}
+                        src={r2Service.getOptimizedImageUrl(product.images[0], {
+                          width: 300,
+                          height: 300,
+                          quality: 85,
+                          format: 'webp'
+                        })}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        onError={(e) => {
+                          console.error('🚨 Image failed to load in Search results:', {
+                            originalUrl: product.images[0],
+                            optimizedUrl: e.currentTarget.src,
+                            product: product.name
+                          });
+                        }}
+                        onLoad={() => {
+                          console.log('✅ Image loaded successfully in Search results:', product.name);
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

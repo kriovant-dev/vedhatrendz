@@ -826,7 +826,7 @@ const ProductManager = () => {
                             src={product.images[0]}
                             alt={product.name}
                             size={40}
-                            className="w-10 h-10 rounded"
+                            className="w-10 h-10 rounded object-cover"
                           />
                         ) : (
                           <div className="w-10 h-10 bg-muted rounded flex items-center justify-center">
@@ -912,7 +912,7 @@ const ProductManager = () => {
                     src={productToDelete.images[0]}
                     alt={productToDelete.name}
                     size={48}
-                    className="w-12 h-12 rounded"
+                    className="w-12 h-12 rounded object-cover"
                   />
                 ) : (
                   <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">

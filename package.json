@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "node dev-api-server.js",
+    "dev:full": "concurrently \"npm run dev:api\" \"npm run dev\"",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "email-server": "node email-server.cjs",
-    "dev:full": "concurrently \"npm run email-server\" \"npm run dev\"",
     "start:production": "concurrently \"npm run email-server\" \"npm run preview\""
   },
   "dependencies": {
@@ -55,8 +56,10 @@
     "embla-carousel-react": "^8.3.0",
     "express": "^5.1.0",
     "firebase": "^12.0.0",
+    "formidable": "^3.5.4",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
+    "multer": "^2.0.2",
     "next-themes": "^0.3.0",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.5",
@@ -78,6 +81,7 @@
   "devDependencies": {
     "@eslint/js": "^9.9.0",
     "@tailwindcss/typography": "^0.5.15",
+    "@types/formidable": "^3.4.6",
     "@types/node": "^22.5.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

@@ -187,8 +187,8 @@ const FeaturedProducts = () => {
                     <LazyImage
                       src={product.images[0]}
                       alt={product.name}
-                      transformation={{ width: 400, height: 533, format: 'webp' }}
-                      className="w-full h-full transition-transform duration-300 group-hover:scale-105"
+                      transformation={{ width: 400, height: 533, quality: 85, format: 'webp' }}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-primary flex items-center justify-center">

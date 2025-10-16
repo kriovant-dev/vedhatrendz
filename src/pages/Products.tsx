@@ -394,6 +394,24 @@ const Sarees = () => {
                     })}
                     alt={product.name}
                     className="w-full h-48 sm:h-56 md:h-64 object-cover transition-transform duration-300 group-hover:scale-105"
+                    onError={(e) => {
+                      // Log error for debugging but don't spam console
+                      console.warn('Image failed to load:', product.images[0]);
+                      // Show fallback placeholder
+                      e.currentTarget.style.display = 'none';
+                      const parent = e.currentTarget.parentElement;
+                      if (parent && !parent.querySelector('.fallback-placeholder')) {
+                        const fallback = document.createElement('div');
+                        fallback.className = 'fallback-placeholder w-full h-48 sm:h-56 md:h-64 bg-gradient-primary flex items-center justify-center';
+                        fallback.innerHTML = `
+                          <div class="text-center text-primary-foreground">
+                            <div class="mb-2 text-2xl sm:text-4xl">👗</div>
+                            <div class="text-xs sm:text-sm font-medium">${product.category}</div>
+                          </div>
+                        `;
+                        parent.appendChild(fallback);
+                      }
+                    }}
                   />
                 ) : (
                   <div className="w-full h-48 sm:h-56 md:h-64 bg-gradient-primary flex items-center justify-center">

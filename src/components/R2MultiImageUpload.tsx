@@ -49,7 +49,13 @@ const R2MultiImageUpload: React.FC<R2MultiImageUploadProps> = ({
     formData.append('fileName', fileName);
     formData.append('folder', folder);
 
-    const response = await fetch('/api/upload-r2-image', {
+    // Use different API URL for development vs production
+    const isDevelopment = import.meta.env.DEV;
+    const apiUrl = isDevelopment 
+      ? 'http://localhost:3001/api/upload-r2-image'
+      : '/api/upload-r2-image';
+
+    const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData,
     });
@@ -115,8 +121,14 @@ const R2MultiImageUpload: React.FC<R2MultiImageUploadProps> = ({
     const imageToRemove = images[index];
     
     try {
+      // Use different API URL for development vs production
+      const isDevelopment = import.meta.env.DEV;
+      const apiUrl = isDevelopment 
+        ? 'http://localhost:3001/api/delete-r2-image'
+        : '/api/delete-r2-image';
+
       // Call delete API endpoint
-      const response = await fetch('/api/delete-r2-image', {
+      const response = await fetch(apiUrl, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

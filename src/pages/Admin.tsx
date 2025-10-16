@@ -17,6 +17,7 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { CategoryService } from '@/services/categoryService';
 import AdminLogin from '@/components/AdminLogin';
 import ProductManager from '@/components/ProductManager';
+import ImageUrlTester from '@/components/ImageUrlTester';
 
 interface Order {
   id: string;
@@ -373,6 +374,7 @@ Thank you for choosing VedhaTrendz! ✨`;
           <TabsList className="admin-mobile-tab-list">
             <TabsTrigger value="orders" className="mobile-button">Order Management</TabsTrigger>
             <TabsTrigger value="products" className="mobile-button">Product Management</TabsTrigger>
+            <TabsTrigger value="debug" className="mobile-button">🔧 Debug Images</TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="space-y-6">
@@ -502,6 +504,22 @@ Thank you for choosing VedhaTrendz! ✨`;
 
           <TabsContent value="products">
             <ProductManager />
+          </TabsContent>
+
+          <TabsContent value="debug">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>🔧 Image Debugging Tools</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Use these tools to debug image loading issues with your R2 URLs.
+                  </p>
+                  <ImageUrlTester />
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 

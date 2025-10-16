@@ -90,7 +90,12 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     return () => observer.disconnect();
   }, [rootMargin]);
 
-  const optimizedSrc = r2Service.getOptimizedImageUrl(src, { ...transformation, format: 'webp' });
+  const optimizedSrc = r2Service.getOptimizedImageUrl(src, transformation);
+  
+  // Debug logging for LazyImage
+  console.log('🖼️ LazyImage - Original src:', src);
+  console.log('🔧 LazyImage - Transformation:', transformation);
+  console.log('✨ LazyImage - Optimized src:', optimizedSrc);
   const placeholderSrc = placeholder || r2Service.getOptimizedImageUrl(src, { 
     width: 50, 
     quality: 20, 
@@ -118,7 +123,18 @@ export const LazyImage: React.FC<LazyImageProps> = ({
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
             isLoaded ? 'opacity-100' : 'opacity-0'
           }`}
-          onLoad={() => setIsLoaded(true)}
+          onLoad={() => {
+            console.log('✅ LazyImage loaded successfully:', alt);
+            setIsLoaded(true);
+          }}
+          onError={(e) => {
+            console.error('🚨 LazyImage failed to load:', {
+              originalSrc: src,
+              optimizedSrc: optimizedSrc,
+              alt: alt,
+              transformation: transformation
+            });
+          }}
           onClick={onClick}
         />
       )}
@@ -134,6 +150,14 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   className = '',
   onClick,
 }) => {
+  if (!src) {
+    return (
+      <div className={`bg-muted rounded flex items-center justify-center ${className}`}>
+        <span className="text-muted-foreground text-xs">No Image</span>
+      </div>
+    );
+  }
+
   const getSizeInPixels = (size: number | string): number => {
     if (typeof size === 'number') return size;
     
@@ -146,6 +170,9 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
   };
 
   const pixelSize = getSizeInPixels(size);
+  
+  // For R2 URLs, we'll use the original URL since transformations aren't available
+  // with direct r2.dev URLs (need custom domain for Cloudflare Image Resizing)
   const thumbnailUrl = r2Service.getThumbnailUrl(src, pixelSize);
 
   return (
@@ -155,6 +182,13 @@ export const ThumbnailImage: React.FC<ThumbnailImageProps> = ({
       className={className}
       onClick={onClick}
       loading="lazy"
+      onError={(e) => {
+        // Fallback to original URL if thumbnail fails
+        const target = e.target as HTMLImageElement;
+        if (target.src !== src) {
+          target.src = src;
+        }
+      }}
     />
   );
 };

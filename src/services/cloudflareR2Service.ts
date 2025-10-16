@@ -17,33 +17,77 @@ class CloudflareR2Service {
   }
 
   /**
+   * Check if URL is from Cloudflare R2
+   */
+  private isR2Url(url: string): boolean {
+    return url.includes('r2.dev') || url.includes('r2.cloudflarestorage.com');
+  }
+
+  /**
+   * Check if URL is from ImageKit (legacy)
+   */
+  private isImageKitUrl(url: string): boolean {
+    return url.includes('imagekit.io') || url.includes('ik.imagekit.io');
+  }
+
+  /**
    * Get optimized image URL with transformations
-   * Uses Cloudflare Images API for transformations
+   * For R2 direct URLs, returns the URL as-is since transformations require custom domain setup
+   * Handles both R2 URLs and legacy ImageKit URLs
+   * 
+   * BANDWIDTH OPTIMIZATION:
+   * - R2.dev URLs automatically route through Cloudflare's CDN
+   * - This provides global caching and reduces bandwidth costs
+   * - No egress fees from R2 when using pub-*.r2.dev URLs
    */
   getOptimizedImageUrl(src: string, options: ImageTransformation = {}): string {
     if (!src) return '';
     
-    // If it's already a full URL, use it as-is
-    if (src.startsWith('http')) {
-      return this.applyTransformations(src, options);
+    // If it's already a full R2 URL, return as-is (automatically uses Cloudflare CDN)
+    if (src.startsWith('http') && this.isR2Url(src)) {
+      // R2.dev URLs automatically benefit from Cloudflare's global CDN
+      // This significantly reduces bandwidth costs and improves performance
+      return src;
     }
 
-    // Construct the full URL
+    // If it's an ImageKit URL, return as-is (legacy support)
+    if (src.startsWith('http') && this.isImageKitUrl(src)) {
+      return src;
+    }
+
+    // If it's any other HTTP URL, return as-is
+    if (src.startsWith('http')) {
+      return src;
+    }
+
+    // Construct the full R2 URL for relative paths
     const baseUrl = this.cdnUrl || this.baseUrl;
     const normalizedPath = this.normalizePath(src);
     const fullUrl = `${baseUrl}/${normalizedPath}`;
     
-    return this.applyTransformations(fullUrl, options);
+    return fullUrl;
   }
 
   /**
    * Apply Cloudflare Image Resizing transformations to URL
+   * Note: For R2 direct URLs, transformations are limited without a custom domain + Image Resizing
+   * However, R2.dev URLs automatically use Cloudflare's CDN for bandwidth optimization
    */
   private applyTransformations(url: string, options: ImageTransformation): string {
     if (!options || Object.keys(options).length === 0) {
       return url;
     }
 
+    // For R2 direct URLs (pub-xxx.r2.dev), we can't use /cdn-cgi/image/ transformations
+    // because they're not routed through Cloudflare's CDN with Image Resizing enabled
+    // However, R2.dev URLs are already optimized through Cloudflare's CDN
+    if (url.includes('r2.dev')) {
+      // R2.dev URLs automatically benefit from Cloudflare's CDN caching and delivery
+      // This reduces bandwidth costs significantly compared to direct R2 access
+      return url;
+    }
+
+    // For custom domains with Cloudflare Image Resizing enabled, use transformations
     const params = new URLSearchParams();
     
     if (options.width) params.append('width', options.width.toString());
@@ -53,7 +97,7 @@ class CloudflareR2Service {
     if (options.fit) params.append('fit', options.fit);
     if (options.gravity) params.append('gravity', options.gravity);
 
-    // Use Cloudflare Image Resizing
+    // Use Cloudflare Image Resizing (only works with custom domains)
     const transformedUrl = `/cdn-cgi/image/${params.toString()}/${url}`;
     return transformedUrl;
   }

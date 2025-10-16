@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/send-email.js": {
+    "api/send-email.cjs": {
       "maxDuration": 30
     },
     "api/upload-r2-image.js": {
