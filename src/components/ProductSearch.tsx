@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Package, Star, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
+import { r2Service } from '@/services/cloudflareR2Service';
 
 interface Product {
   id: string;
@@ -210,20 +211,28 @@ const ProductSearch: React.FC = () => {
                         src={r2Service.getOptimizedImageUrl(product.images[0], {
                           width: 300,
                           height: 300,
-                          quality: 85,
+                          quality: 80, // slightly lower for bandwidth
                           format: 'webp'
                         })}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        loading="lazy"
+                        decoding="async"
+                        crossOrigin="anonymous"
                         onError={(e) => {
-                          console.error('🚨 Image failed to load in Search results:', {
-                            originalUrl: product.images[0],
-                            optimizedUrl: e.currentTarget.src,
-                            product: product.name
-                          });
-                        }}
-                        onLoad={() => {
-                          console.log('✅ Image loaded successfully in Search results:', product.name);
+                          // fallback for broken images
+                          e.currentTarget.style.display = 'none';
+                          const parent = e.currentTarget.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `
+                              <div class='w-full h-full flex items-center justify-center bg-gradient-primary'>
+                                <div class='text-center text-primary-foreground'>
+                                  <div class='mb-2 text-2xl'>👗</div>
+                                  <div class='text-xs font-medium'>${product.category}</div>
+                                </div>
+                              </div>
+                            `;
+                          }
                         }}
                       />
                     ) : (

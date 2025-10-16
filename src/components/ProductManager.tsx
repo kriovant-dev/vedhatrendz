@@ -18,6 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import R2MultiImageUpload, { ImageUploadResult } from '@/components/R2MultiImageUpload';
 import ColorSelector from '@/components/ColorSelector';
+import { ValidationUtils } from '@/utils/validation';
 import { CategoryService } from '@/services/categoryService';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Package } from 'lucide-react';
@@ -388,9 +389,27 @@ const ProductManager = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Ensure required fields are present for create operation
-    if (!formData.name.trim() || !formData.category || !formData.price) {
-      toast.error('Please fill in all required fields (Name, Category, Price)');
+    // Comprehensive validation
+    const nameValidation = ValidationUtils.validateName(formData.name, 'Product name');
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error!);
+      return;
+    }
+    
+    const codeValidation = ValidationUtils.validateProductCode(formData.product_code);
+    if (!codeValidation.isValid) {
+      toast.error(codeValidation.error!);
+      return;
+    }
+    
+    const priceValidation = ValidationUtils.validatePrice(formData.price);
+    if (!priceValidation.isValid) {
+      toast.error(priceValidation.error!);
+      return;
+    }
+    
+    if (!formData.category) {
+      toast.error('Please select a category');
       return;
     }
 

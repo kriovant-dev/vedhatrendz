@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import StarRating from './StarRating';
 import { CreateReviewData } from '@/services/reviewService';
 import { toast } from 'sonner';
+import { ValidationUtils } from '@/utils/validation';
 
 interface ReviewFormProps {
   productId: string;
@@ -34,9 +35,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (rating === 0) {
-      toast.error('Please select a rating');
+    // Comprehensive validation
+    const ratingValidation = ValidationUtils.validateRating(rating);
+    if (!ratingValidation.isValid) {
+      toast.error(ratingValidation.error!);
       return;
     }
 
@@ -45,26 +47,33 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
       return;
     }
 
+    if (title.trim().length < 5) {
+      toast.error('Review title must be at least 5 characters long');
+      return;
+    }
+
     if (!comment.trim()) {
       toast.error('Please enter a review comment');
       return;
     }
 
-    if (!name.trim()) {
-      toast.error('Please enter your name');
+    if (comment.trim().length < 10) {
+      toast.error('Review comment must be at least 10 characters long');
       return;
     }
 
-    if (!email.trim()) {
-      toast.error('Please enter your email');
-      return;
-    }
+    if (!userInfo) {
+      const nameValidation = ValidationUtils.validateName(name);
+      if (!nameValidation.isValid) {
+        toast.error(nameValidation.error!);
+        return;
+      }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      toast.error('Please enter a valid email address');
-      return;
+      const emailValidation = ValidationUtils.validateEmail(email);
+      if (!emailValidation.isValid) {
+        toast.error(emailValidation.error!);
+        return;
+      }
     }
 
     try {

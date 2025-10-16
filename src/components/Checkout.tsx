@@ -14,6 +14,7 @@ import EmailAuth from './EmailAuth';
 import { toast } from 'sonner';
 import { FirebaseClient } from '@/integrations/firebase/client';
 import { emailService } from '@/services/emailService';
+import { ValidationUtils } from '@/utils/validation';
 
 // Razorpay types
 declare global {
@@ -260,41 +261,20 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
   const handleShippingSubmit = () => {
     const { fullName, email, phone, address, city, state, pincode } = shippingDetails;
     
-    // Comprehensive validation
-    if (!fullName?.trim()) {
-      toast.error('Please enter your full name');
-      return;
-    }
-
-    if (fullName.trim().length < 2) {
-      toast.error('Full name must be at least 2 characters long');
-      return;
-    }
-
-    if (!email?.trim()) {
-      toast.error('Please enter your email address');
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
-    if (!phone?.trim()) {
-      toast.error('Please enter your phone number');
-      return;
-    }
-
-    // Validate Indian phone number
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(phone.replace(/\D/g, ''))) {
-      toast.error('Please enter a valid 10-digit Indian phone number starting with 6, 7, 8, or 9');
-      return;
-    }
-
-    if (!address?.trim()) {
-      toast.error('Please enter your address');
+    // Use comprehensive validation
+    const validationResult = ValidationUtils.validateShippingForm({
+      fullName: fullName || '',
+      email: email || '',
+      phone: phone || '',
+      address: address || '',
+      city: city || '',
+      state: state || '',
+      pincode: pincode || ''
+    });
+    
+    if (!validationResult.isValid) {
+      // Show the first error
+      toast.error(validationResult.errors[0]);
       return;
     }
 

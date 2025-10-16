@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Phone, Mail, Clock, MessageCircle, Send, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { emailService } from '@/services/emailService';
+import { ValidationUtils } from '@/utils/validation';
 
 const Contact = () => {
   const navigate = useNavigate();
@@ -26,20 +27,74 @@ const Contact = () => {
   const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    // Sanitize input to prevent XSS
+    const sanitizedValue = ValidationUtils.sanitizeInput(value);
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: sanitizedValue
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
-    if (!formData.name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.message.trim()) {
+    // Comprehensive validation
+    const nameValidation = ValidationUtils.validateName(formData.name);
+    if (!nameValidation.isValid) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
+        title: "Name Error",
+        description: nameValidation.error,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const emailValidation = ValidationUtils.validateEmail(formData.email);
+    if (!emailValidation.isValid) {
+      toast({
+        title: "Email Error",
+        description: emailValidation.error,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (formData.phone && formData.phone.trim()) {
+      const phoneValidation = ValidationUtils.validateIndianPhone(formData.phone);
+      if (!phoneValidation.isValid) {
+        toast({
+          title: "Phone Error",
+          description: phoneValidation.error,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    if (!formData.subject.trim()) {
+      toast({
+        title: "Missing Subject",
+        description: "Please enter a subject for your message.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!formData.message.trim()) {
+      toast({
+        title: "Missing Message",
+        description: "Please enter your message.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (formData.message.trim().length < 10) {
+      toast({
+        title: "Message Too Short",
+        description: "Please provide more details in your message (at least 10 characters).",
         variant: "destructive"
       });
       return;
