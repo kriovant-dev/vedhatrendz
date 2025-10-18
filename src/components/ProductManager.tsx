@@ -38,8 +38,6 @@ interface Product {
   sizes: string[];
   images: string[];
   color_images?: { [color: string]: string[] }; // New: color-specific images
-  image_file_ids?: string[]; // ImageKit file IDs for deletion
-  color_image_file_ids?: { [color: string]: string[] }; // New: color-specific file IDs
   delivery_days_min: number | null; // Minimum delivery days
   delivery_days_max: number | null; // Maximum delivery days (for range)
   stock_quantity: number | null;
@@ -72,11 +70,9 @@ interface ProductFormData {
   is_featured_hero: boolean;
 }
 
-interface ProductEditData extends Omit<Product, 'images' | 'image_file_ids' | 'color_images' | 'color_image_file_ids'> {
+interface ProductEditData extends Omit<Product, 'images' | 'color_images'> {
   images?: string[];
-  image_file_ids?: string[];
   color_images?: { [color: string]: string[] };
-  color_image_file_ids?: { [color: string]: string[] };
 }
 
 // Type for creating new products - only required fields
@@ -93,8 +89,7 @@ interface CreateProductData {
   sizes?: string[];
   images?: string[];
   color_images?: { [color: string]: string[] }; // Optional, only include if has data
-  image_file_ids?: string[]; // ImageKit file IDs for deletion
-  color_image_file_ids?: { [color: string]: string[] }; // Optional, only include if has data
+
   delivery_days_min?: number | null;
   delivery_days_max?: number | null;
   stock_quantity?: number | null;
@@ -952,7 +947,7 @@ const ProductManager = () => {
                 Are you sure you want to delete this product? This action cannot be undone.
               </p>
               <p>
-                <strong>All images associated with this product will also be permanently deleted from the ImageKit server.</strong>
+                <strong>All images associated with this product will also be permanently deleted from the server.</strong>
               </p>
             </div>
             

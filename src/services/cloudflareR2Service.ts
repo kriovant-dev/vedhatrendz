@@ -24,16 +24,8 @@ class CloudflareR2Service {
   }
 
   /**
-   * Check if URL is from ImageKit (legacy)
-   */
-  private isImageKitUrl(url: string): boolean {
-    return url.includes('imagekit.io') || url.includes('ik.imagekit.io');
-  }
-
-  /**
    * Get optimized image URL with transformations
    * For R2 direct URLs, returns the URL as-is since transformations require custom domain setup
-   * Handles both R2 URLs and legacy ImageKit URLs
    * 
    * BANDWIDTH OPTIMIZATION:
    * - R2.dev URLs automatically route through Cloudflare's CDN
@@ -47,11 +39,6 @@ class CloudflareR2Service {
     if (src.startsWith('http') && this.isR2Url(src)) {
       // R2.dev URLs automatically benefit from Cloudflare's global CDN
       // This significantly reduces bandwidth costs and improves performance
-      return src;
-    }
-
-    // If it's an ImageKit URL, return as-is (legacy support)
-    if (src.startsWith('http') && this.isImageKitUrl(src)) {
       return src;
     }
 

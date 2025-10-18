@@ -4,11 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { ImageKitService, ImageUploadResult } from '@/services/imagekitService';
 import { toast } from 'sonner';
 
+interface ImageUploadResult {
+  url: string;
+  fileName: string;
+}
+
 interface ImageUploadProps {
-  onUpload: (result: ImageUploadResult) => void;
+  onUpload?: (result: ImageUploadResult) => void;
   onRemove?: () => void;
   currentImage?: string;
   accept?: string;
@@ -43,8 +47,30 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
     setIsUploading(true);
     try {
-      const result = await ImageKitService.uploadImage(file);
-      onUpload(result);
+      // Upload to R2 instead of ImageKit
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('fileName', file.name);
+      formData.append('folder', 'products');
+
+      const response = await fetch('/api/upload-r2-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (onUpload) {
+        onUpload({
+          url: result.url,
+          fileName: result.fileName
+        });
+      }
       toast.success('Image uploaded successfully');
     } catch (error) {
       console.error('Upload failed:', error);
