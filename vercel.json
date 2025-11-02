@@ -1,21 +1,6 @@
 {
-  "functions": {
-    "api/send-email.cjs": {
-      "maxDuration": 30
-    },
-    "api/upload-r2-image.js": {
-      "maxDuration": 30
-    },
-    "api/delete-r2-image.js": {
-      "maxDuration": 30
-    },
-    "api/create-razorpay-order.js": {
-      "maxDuration": 30
-    },
-    "api/verify-razorpay-signature.js": {
-      "maxDuration": 30
-    }
-  },
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/(.*)",
