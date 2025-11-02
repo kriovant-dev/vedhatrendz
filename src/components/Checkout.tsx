@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -130,12 +130,20 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
 
   // State to store refreshed prices from database
   const [refreshedPrices, setRefreshedPrices] = useState<{ [key: string]: number }>({});
+  
+  // Ref to track current checkoutItems without causing re-renders
+  const checkoutItemsRef = useRef(checkoutItems);
+  
+  useEffect(() => {
+    checkoutItemsRef.current = checkoutItems;
+  }, [checkoutItems]);
 
   // Fetch current prices from Firebase for all cart items
   const refreshItemPrices = useCallback(async () => {
-    console.log('🔄 refreshItemPrices called, checkoutItems:', checkoutItems);
+    const items = checkoutItemsRef.current;
+    console.log('🔄 refreshItemPrices called, checkoutItems:', items);
     
-    if (!checkoutItems || checkoutItems.length === 0) {
+    if (!items || items.length === 0) {
       console.log('⚠️ No checkout items, clearing prices');
       setRefreshedPrices({});
       return;
@@ -143,7 +151,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
 
     try {
       const pricesMap: { [key: string]: number } = {};
-      const productIds = Array.from(new Set(checkoutItems.map(item => item.productId)));
+      const productIds = Array.from(new Set(items.map(item => item.productId)));
       
       console.log('📦 Fetching prices for product IDs:', productIds);
 
@@ -182,7 +190,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
         console.log(`✅ Got product: ${product.name}, size_prices:`, product.size_prices);
 
         // For each cart item of this product, get the correct price
-        checkoutItems.forEach(item => {
+        items.forEach(item => {
           if (item.productId === productId) {
             let currentPrice = product.price; // Default to base price
             console.log(`  → Checking item: ${item.name} (size: ${item.size})`);
@@ -220,7 +228,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
       console.error('❌ Error refreshing prices:', error);
       // Fall back to cached prices if fetch fails
     }
-  }, [checkoutItems]);
+  }, []);
 
   // Refresh prices when dialog opens or checkout items change
   useEffect(() => {
@@ -229,7 +237,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
       console.log('🚀 Calling refreshItemPrices from useEffect');
       refreshItemPrices();
     }
-  }, [isOpen, items, buyNowItem, refreshItemPrices]);
+  }, [isOpen, items.length, buyNowItem?.productId]);
   
   // Calculate total based on checkout items with refreshed prices
   const getCheckoutTotal = () => {
