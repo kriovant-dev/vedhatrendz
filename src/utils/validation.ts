@@ -283,17 +283,17 @@ export class EnvironmentValidator {
       }
     });
     
-    // Validate URLs
-    const urls = {
-      'VITE_FIREBASE_AUTH_DOMAIN': import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      'VITE_R2_PUBLIC_URL': import.meta.env.VITE_R2_PUBLIC_URL
-    };
+    // Validate Firebase Auth Domain (firebaseapp.com format)
+    const authDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN;
+    if (authDomain && !authDomain.includes('firebaseapp.com')) {
+      errors.push(`Invalid Firebase Auth Domain format: ${authDomain}`);
+    }
     
-    Object.entries(urls).forEach(([key, url]) => {
-      if (url && !this.isValidUrl(url)) {
-        errors.push(`Invalid URL format for ${key}: ${url}`);
-      }
-    });
+    // Validate R2 URL
+    const r2Url = import.meta.env.VITE_R2_PUBLIC_URL;
+    if (r2Url && !this.isValidUrl(r2Url)) {
+      errors.push(`Invalid R2 URL format: ${r2Url}`);
+    }
     
     return { isValid: errors.length === 0, errors };
   }

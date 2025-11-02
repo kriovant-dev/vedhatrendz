@@ -59,11 +59,11 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
         <SheetContent className="w-full sm:max-w-lg flex flex-col">
           <SheetHeader>
             <SheetTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="h-5 w-5" />
-              Shopping Cart
-            </div>
-            <Badge variant="secondary">{items.length} item{items.length !== 1 ? 's' : ''}</Badge>
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5" />
+                Shopping Cart
+              </div>
+              <Badge variant="secondary">{items.length} item{items.length !== 1 ? 's' : ''}</Badge>
             </SheetTitle>
           </SheetHeader>
 
