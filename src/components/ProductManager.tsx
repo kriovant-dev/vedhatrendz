@@ -462,10 +462,6 @@ const ProductManager = () => {
       // Combine base and custom sizes, remove duplicates
       const allValidSizes = Array.from(new Set([...baseSizes, ...customSizesWithPrices]));
       
-      console.log('Base sizes from input:', baseSizes);
-      console.log('Custom sizes with prices > 0:', customSizesWithPrices);
-      console.log('Final sizes to save:', allValidSizes);
-      
       const baseProductData: CreateProductData = {
         name: formData.name,
         product_code: formData.product_code,
@@ -502,8 +498,6 @@ const ProductManager = () => {
             convertedSizePricing[size] = Math.round(price * 100);
           }
         });
-        console.log('Saving size_prices (in paise):', convertedSizePricing);
-        console.log('Saving sizes array:', allValidSizes);
         baseProductData.size_prices = convertedSizePricing;
       }
 

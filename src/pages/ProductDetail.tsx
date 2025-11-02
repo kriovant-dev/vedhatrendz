@@ -114,7 +114,6 @@ const ProductDetail = () => {
   };
 
   const formatPrice = (price: number) => {
-    console.log('formatPrice input (paise):', price, 'output (rupees):', price / 100);
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
@@ -125,9 +124,6 @@ const ProductDetail = () => {
   const getPrice = (): number => {
     if (!product) return 0;
     
-    console.log('Product size_prices:', product.size_prices);
-    console.log('Selected size:', selectedSize);
-    
     if (product.size_prices && selectedSize) {
       // size_prices are stored in paise (cents)
       // Try to find size-specific price, fallback to default
@@ -135,18 +131,15 @@ const ProductDetail = () => {
       const defaultPrice = product.size_prices.default;
       
       if (sizePrice && sizePrice > 0) {
-        console.log('Using size-specific price:', sizePrice);
         return sizePrice;
       }
       
       if (defaultPrice && defaultPrice > 0) {
-        console.log('Using default price:', defaultPrice);
         return defaultPrice;
       }
     }
     
     // Fallback to product price if no size pricing
-    console.log('Using base product price:', product.price);
     return product.price;
   };
 
@@ -155,7 +148,6 @@ const ProductDetail = () => {
     
     // If no size_prices configured, all sizes are valid
     if (!product.size_prices) {
-      console.log('No size_prices configured, showing all sizes:', product.sizes);
       return product.sizes;
     }
     
@@ -170,22 +162,18 @@ const ProductDetail = () => {
       
       // If size not in size_prices, it's a base size -> VALID
       if (price === undefined) {
-        console.log(`Size ${size}: not in size_prices (base size) -> VALID`);
         return true;
       }
       
       // If size is in size_prices with valid price -> VALID
       if (price > 0) {
-        console.log(`Size ${size}: price=${price} in size_prices -> VALID`);
         return true;
       }
       
       // If size is in size_prices with 0 price (deleted) -> INVALID
-      console.log(`Size ${size}: price=${price} in size_prices (deleted) -> INVALID`);
       return false;
     });
     
-    console.log('Valid sizes after filtering:', validSizes);
     return validSizes;
   };
 

@@ -58,12 +58,10 @@ const Sarees = () => {
           navigate(result.redirectUrl);
         } else {
           // Continue with current search filtering (no redirect needed)
-          console.log('🔍 Performing local search filtering for:', searchQuery.trim());
         }
       } catch (error) {
         console.error('Search error:', error);
         // Fall back to current search filtering
-        console.log('🔍 Falling back to local search filtering for:', searchQuery.trim());
       }
     }
   };
@@ -101,7 +99,6 @@ const Sarees = () => {
     const searchParam = searchParams.get('search');
     
     if (categoryParam) {
-      console.log('Category param from URL:', categoryParam);
       
       // Wait for categories to load before setting the selected category
       if (categories.length > 0) {
@@ -114,10 +111,8 @@ const Sarees = () => {
         );
         
         if (matchingCategory) {
-          console.log('Found matching category:', matchingCategory);
           setSelectedCategory(matchingCategory.name); // Use the exact name from the database
         } else {
-          console.log('No matching category found, using param as-is:', categoryParam);
           setSelectedCategory(categoryParam);
         }
       } else {
@@ -138,9 +133,6 @@ const Sarees = () => {
   const filteredProducts = React.useMemo(() => {
     let filtered = allProducts;
 
-    console.log('All products:', allProducts.length);
-    console.log('Selected category:', selectedCategory);
-    console.log('Available categories:', categories);
 
     // Filter by search query
     if (searchQuery) {
@@ -161,7 +153,6 @@ const Sarees = () => {
         cat.slug?.toLowerCase() === selectedCategory.toLowerCase()
       );
 
-      console.log('Matching category found:', matchingCategory);
 
       if (matchingCategory) {
         // Filter products that match either the category slug or name
@@ -172,7 +163,6 @@ const Sarees = () => {
                          product.category.toLowerCase() === matchingCategory.slug?.toLowerCase();
           
           if (matches) {
-            console.log('Product matches category:', product.name, 'category:', product.category);
           }
           return matches;
         });
@@ -183,14 +173,12 @@ const Sarees = () => {
                          product.category.toLowerCase() === selectedCategory.toLowerCase();
           
           if (matches) {
-            console.log('Product matches category (fallback):', product.name, 'category:', product.category);
           }
           return matches;
         });
       }
     }
 
-    console.log('Filtered products:', filtered.length);
 
     // Filter by price range
     if (priceRange !== 'all') {
@@ -260,7 +248,6 @@ const Sarees = () => {
     });
 
     toast.success('Added to cart!');
-    console.log('Add to cart:', product.id);
   };
 
   if (isLoading) {

@@ -93,9 +93,6 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   const optimizedSrc = r2Service.getOptimizedImageUrl(src, transformation);
   
   // Debug logging for LazyImage
-  console.log('🖼️ LazyImage - Original src:', src);
-  console.log('🔧 LazyImage - Transformation:', transformation);
-  console.log('✨ LazyImage - Optimized src:', optimizedSrc);
   const placeholderSrc = placeholder || r2Service.getOptimizedImageUrl(src, { 
     width: 50, 
     quality: 20, 
@@ -124,7 +121,6 @@ export const LazyImage: React.FC<LazyImageProps> = ({
             isLoaded ? 'opacity-100' : 'opacity-0'
           }`}
           onLoad={() => {
-            console.log('✅ LazyImage loaded successfully:', alt);
             setIsLoaded(true);
           }}
           onError={(e) => {
