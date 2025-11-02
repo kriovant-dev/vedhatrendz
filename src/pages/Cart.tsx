@@ -199,7 +199,8 @@ const Cart: React.FC = () => {
       {/* Checkout Modal */}
       {showCheckout && (
         <Checkout 
-          isOpen={showCheckout} 
+          isOpen={showCheckout}
+          onOpen={() => setShowCheckout(true)}
           onClose={() => setShowCheckout(false)} 
         />
       )}

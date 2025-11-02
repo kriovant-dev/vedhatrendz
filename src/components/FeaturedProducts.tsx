@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Heart, ShoppingBag, Eye } from 'lucide-react';
 import { firebase } from '@/integrations/firebase/client';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { ColorService, CustomColor } from '@/services/colorService';
 import { r2Service } from '@/services/cloudflareR2Service';
 import { ResponsiveImage, LazyImage } from '@/components/R2OptimizedImages';
 import { toast } from 'sonner';
@@ -29,6 +30,21 @@ const FeaturedProducts = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const [allColors, setAllColors] = useState<CustomColor[]>([]);
+
+  // Fetch all colors (default + custom)
+  useEffect(() => {
+    const fetchColors = async () => {
+      try {
+        const colors = await ColorService.getAllColors();
+        setAllColors(colors);
+      } catch (error) {
+        console.error('Error fetching colors:', error);
+        setAllColors(ColorService.getDefaultColors());
+      }
+    };
+    fetchColors();
+  }, []);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['featured-products'],
@@ -51,25 +67,12 @@ const FeaturedProducts = () => {
     }).format(price / 100);
   };
 
-  const getColorClass = (color: string) => {
-    const colorMap = {
-      burgundy: 'bg-saree-burgundy',
-      gold: 'bg-saree-gold',
-      emerald: 'bg-saree-emerald',
-      'royal-blue': 'bg-saree-royal-blue',
-      saffron: 'bg-saree-saffron',
-      rose: 'bg-saree-rose',
-      purple: 'bg-purple-500',
-      silver: 'bg-gray-400',
-      black: 'bg-black',
-      blue: 'bg-blue-500',
-      green: 'bg-green-500',
-      red: 'bg-red-500',
-      cream: 'bg-amber-100',
-      pink: 'bg-pink-500',
-      orange: 'bg-orange-500'
-    };
-    return colorMap[color as keyof typeof colorMap] || 'bg-gray-400';
+  const getColorHex = (colorName: string): string => {
+    // Find the color in our colors array
+    const colorObj = allColors.find(c => 
+      c.name.toLowerCase() === colorName.toLowerCase()
+    );
+    return colorObj?.hex_code || '#6b7280'; // Default to gray if not found
   };
 
   const handleProductClick = (productId: string) => {
@@ -267,7 +270,8 @@ const FeaturedProducts = () => {
                       {product.colors.slice(0, 3).map((color) => (
                         <div
                           key={color}
-                          className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-white shadow-sm ${getColorClass(color)}`}
+                          className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-white shadow-sm"
+                          style={{ backgroundColor: getColorHex(color) }}
                         />
                       ))}
                       {product.colors.length > 3 && (

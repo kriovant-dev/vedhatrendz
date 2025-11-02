@@ -20,9 +20,15 @@ import R2MultiImageUpload, { ImageUploadResult } from '@/components/R2MultiImage
 import ColorSelector from '@/components/ColorSelector';
 import { ValidationUtils } from '@/utils/validation';
 import { CategoryService } from '@/services/categoryService';
+import SizePricingManager from '@/components/SizePricingManager';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Package } from 'lucide-react';
 import { ThumbnailImage } from '@/components/R2OptimizedImages';
+
+interface SizePricing {
+  default: number;
+  [size: string]: number;
+}
 
 interface Product {
   id: string;
@@ -38,6 +44,7 @@ interface Product {
   sizes: string[];
   images: string[];
   color_images?: { [color: string]: string[] }; // New: color-specific images
+  size_prices?: SizePricing; // Size-based pricing with default fallback
   delivery_days_min: number | null; // Minimum delivery days
   delivery_days_max: number | null; // Maximum delivery days (for range)
   stock_quantity: number | null;
@@ -89,6 +96,7 @@ interface CreateProductData {
   sizes?: string[];
   images?: string[];
   color_images?: { [color: string]: string[] }; // Optional, only include if has data
+  size_prices?: SizePricing; // Optional size-based pricing
 
   delivery_days_min?: number | null;
   delivery_days_max?: number | null;
@@ -123,6 +131,7 @@ const ProductManager = () => {
 
   const [uploadedImages, setUploadedImages] = useState<ImageUploadResult[]>([]);
   const [colorImages, setColorImages] = useState<{ [color: string]: ImageUploadResult[] }>({});
+  const [sizePricing, setSizePricing] = useState<SizePricing>({ default: 0 });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showNewCategoryDialog, setShowNewCategoryDialog] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -354,6 +363,7 @@ const ProductManager = () => {
     });
     setUploadedImages([]);
     setColorImages({});
+    setSizePricing({ default: 0 });
   };
 
   const handleEdit = (product: Product) => {
@@ -377,6 +387,18 @@ const ProductManager = () => {
       is_bestseller: product.is_bestseller || false,
       is_featured_hero: product.is_featured_hero || false,
     });
+    
+    // Convert size_prices from paise back to rupees for editing
+    if (product.size_prices) {
+      const convertedPricing: SizePricing = { default: 0 };
+      Object.entries(product.size_prices).forEach(([size, price]) => {
+        convertedPricing[size] = price / 100;
+      });
+      setSizePricing(convertedPricing);
+    } else {
+      setSizePricing({ default: Math.round(product.price / 100) });
+    }
+    
     setIsDialogOpen(true);
   };
 
@@ -430,6 +452,20 @@ const ProductManager = () => {
 
     try {
       // Prepare product data, filtering out undefined values
+      // Only include sizes that are:
+      // 1. In the base sizes input field (predefined sizes), OR
+      // 2. Have a valid price > 0 in size_prices (custom sizes)
+      
+      const baseSizes = formData.sizes.split(',').map(s => s.trim()).filter(s => s);
+      const customSizesWithPrices = Object.keys(sizePricing).filter(s => s !== 'default' && sizePricing[s] > 0);
+      
+      // Combine base and custom sizes, remove duplicates
+      const allValidSizes = Array.from(new Set([...baseSizes, ...customSizesWithPrices]));
+      
+      console.log('Base sizes from input:', baseSizes);
+      console.log('Custom sizes with prices > 0:', customSizesWithPrices);
+      console.log('Final sizes to save:', allValidSizes);
+      
       const baseProductData: CreateProductData = {
         name: formData.name,
         product_code: formData.product_code,
@@ -440,7 +476,7 @@ const ProductManager = () => {
         fabric: formData.fabric || null,
         occasion: formData.occasion || null,
         colors: formData.colors,
-        sizes: formData.sizes.split(',').map(s => s.trim()).filter(s => s),
+        sizes: allValidSizes,
         images: finalImages,
         delivery_days_min: formData.delivery_days_min ? parseInt(formData.delivery_days_min) : null,
         delivery_days_max: formData.delivery_days_max ? parseInt(formData.delivery_days_max) : null,
@@ -453,6 +489,22 @@ const ProductManager = () => {
       // Only add color_images if they have data
       if (Object.keys(colorImagesData).length > 0) {
         baseProductData.color_images = colorImagesData;
+      }
+
+      // Only add size_prices if they have custom pricing
+      if (Object.keys(sizePricing).length > 1 || sizePricing.default > 0) {
+        // Convert prices from rupees to paise (multiply by 100) for storage
+        const convertedSizePricing: SizePricing = { 
+          default: Math.round(sizePricing.default * 100) 
+        };
+        Object.entries(sizePricing).forEach(([size, price]) => {
+          if (size !== 'default' && price > 0) {
+            convertedSizePricing[size] = Math.round(price * 100);
+          }
+        });
+        console.log('Saving size_prices (in paise):', convertedSizePricing);
+        console.log('Saving sizes array:', allValidSizes);
+        baseProductData.size_prices = convertedSizePricing;
       }
 
       // Filter out undefined values to avoid Firebase errors
@@ -597,7 +649,7 @@ const ProductManager = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Price (₹) *</label>
+                  <label className="text-sm font-medium">Default Price (₹) *</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -605,6 +657,7 @@ const ProductManager = () => {
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     required
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Base/fallback price if no size-specific price is set</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Original Price (₹)</label>
@@ -614,6 +667,7 @@ const ProductManager = () => {
                     value={formData.original_price}
                     onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">For showing discount %</p>
                 </div>
               </div>
 
@@ -653,6 +707,13 @@ const ProductManager = () => {
                   placeholder="e.g., S, M, L, XL"
                 />
               </div>
+
+              {/* Size-Based Pricing Manager */}
+              <SizePricingManager
+                sizes={formData.sizes.split(',').map(s => s.trim()).filter(s => s)}
+                sizePricing={sizePricing}
+                onSizePricingChange={setSizePricing}
+              />
 
               <div>
                 <label className="text-sm font-medium">Product Images</label>

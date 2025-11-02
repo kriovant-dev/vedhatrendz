@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { r2Service } from '@/services/cloudflareR2Service';
+import { ColorService, CustomColor } from '@/services/colorService';
 import { ResponsiveImage, BlurUpImage, ThumbnailImage } from '@/components/R2OptimizedImages';
 import { getDeliveryText } from '@/utils/deliveryUtils';
 
@@ -31,6 +32,7 @@ interface Product {
   sizes: string[];
   images: string[];
   color_images?: { [color: string]: string[] };
+  size_prices?: { default: number; [size: string]: number }; // Size-based pricing with default fallback
   delivery_days_min: number | null;
   delivery_days_max: number | null;
   is_new: boolean;
@@ -48,6 +50,21 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [allColors, setAllColors] = useState<CustomColor[]>([]);
+
+  // Fetch all colors (default + custom)
+  useEffect(() => {
+    const fetchColors = async () => {
+      try {
+        const colors = await ColorService.getAllColors();
+        setAllColors(colors);
+      } catch (error) {
+        console.error('Error fetching colors:', error);
+        setAllColors(ColorService.getDefaultColors());
+      }
+    };
+    fetchColors();
+  }, []);
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', id],
@@ -68,8 +85,19 @@ const ProductDetail = () => {
     if (product?.colors?.length > 0) {
       setSelectedColor(product.colors[0]);
     }
-    if (product?.sizes?.length > 0) {
-      setSelectedSize(product.sizes[0]);
+    
+    // Get valid sizes using the same logic as display
+    if (product?.sizes) {
+      const validSizes = product.sizes.filter(size => {
+        const price = product.size_prices?.[size];
+        // Valid if: no size_prices entry (base size) OR has price > 0 (custom size)
+        if (price === undefined) return true; // Base size
+        return price > 0; // Custom size with valid price
+      });
+      
+      if (validSizes.length > 0) {
+        setSelectedSize(validSizes[0]);
+      }
     }
   }, [product]);
 
@@ -86,32 +114,99 @@ const ProductDetail = () => {
   };
 
   const formatPrice = (price: number) => {
+    console.log('formatPrice input (paise):', price, 'output (rupees):', price / 100);
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
     }).format(price / 100);
   };
 
-  const getColorClass = (color: string) => {
-    const colorMap = {
-      burgundy: 'bg-saree-burgundy',
-      gold: 'bg-saree-gold',
-      emerald: 'bg-saree-emerald',
-      'royal-blue': 'bg-saree-royal-blue',
-      saffron: 'bg-saree-saffron',
-      rose: 'bg-saree-rose',
-      purple: 'bg-purple-500',
-      silver: 'bg-gray-400',
-      black: 'bg-black',
-      white: 'bg-white border',
-      blue: 'bg-blue-500',
-      green: 'bg-green-500',
-      red: 'bg-red-500',
-      cream: 'bg-amber-100',
-      pink: 'bg-pink-500',
-      orange: 'bg-orange-500'
-    };
-    return colorMap[color as keyof typeof colorMap] || 'bg-gray-400';
+  // Get price based on selected size (uses size-specific pricing if available)
+  const getPrice = (): number => {
+    if (!product) return 0;
+    
+    console.log('Product size_prices:', product.size_prices);
+    console.log('Selected size:', selectedSize);
+    
+    if (product.size_prices && selectedSize) {
+      // size_prices are stored in paise (cents)
+      // Try to find size-specific price, fallback to default
+      const sizePrice = product.size_prices[selectedSize];
+      const defaultPrice = product.size_prices.default;
+      
+      if (sizePrice && sizePrice > 0) {
+        console.log('Using size-specific price:', sizePrice);
+        return sizePrice;
+      }
+      
+      if (defaultPrice && defaultPrice > 0) {
+        console.log('Using default price:', defaultPrice);
+        return defaultPrice;
+      }
+    }
+    
+    // Fallback to product price if no size pricing
+    console.log('Using base product price:', product.price);
+    return product.price;
+  };
+
+  const getValidSizes = (): string[] => {
+    if (!product || !product.sizes) return [];
+    
+    // If no size_prices configured, all sizes are valid
+    if (!product.size_prices) {
+      console.log('No size_prices configured, showing all sizes:', product.sizes);
+      return product.sizes;
+    }
+    
+    // A size is valid if:
+    // 1. It HAS a price in size_prices (custom size with price)
+    // 2. It DOESN'T have an entry in size_prices (base size, uses default)
+    // 
+    // A size is INVALID only if:
+    // 3. It's in size_prices with 0 or undefined price (deleted custom size)
+    const validSizes = product.sizes.filter(size => {
+      const price = product.size_prices?.[size];
+      
+      // If size not in size_prices, it's a base size -> VALID
+      if (price === undefined) {
+        console.log(`Size ${size}: not in size_prices (base size) -> VALID`);
+        return true;
+      }
+      
+      // If size is in size_prices with valid price -> VALID
+      if (price > 0) {
+        console.log(`Size ${size}: price=${price} in size_prices -> VALID`);
+        return true;
+      }
+      
+      // If size is in size_prices with 0 price (deleted) -> INVALID
+      console.log(`Size ${size}: price=${price} in size_prices (deleted) -> INVALID`);
+      return false;
+    });
+    
+    console.log('Valid sizes after filtering:', validSizes);
+    return validSizes;
+  };
+
+  const getColorHex = (colorName: string): string => {
+    // Find the color in our colors array
+    const colorObj = allColors.find(c => 
+      c.name.toLowerCase() === colorName.toLowerCase()
+    );
+    return colorObj?.hex_code || '#6b7280'; // Default to gray if not found
+  };
+
+  // Helper component for color display with hex code
+  const ColorSwatch = ({ colorName }: { colorName: string }) => {
+    const hexCode = getColorHex(colorName);
+    return (
+      <div 
+        className="w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm"
+        style={{ backgroundColor: hexCode }}
+        title={`${colorName} - ${hexCode}`}
+      />
+    );
   };
 
   const handleAddToCart = () => {
@@ -127,7 +222,7 @@ const ProductDetail = () => {
     addToCart({
       productId: product.id,
       name: product.name,
-      price: product.price,
+      price: getPrice(), // Use size-specific price if available
       color: selectedColor,
       size: selectedSize,
       quantity: quantity,
@@ -163,7 +258,7 @@ const ProductDetail = () => {
       addToWishlist({
         productId: product.id,
         name: product.name,
-        price: product.price,
+        price: getPrice(), // Use size-specific price if available
         originalPrice: product.original_price,
         image: displayImages[0] || product.images?.[0] || '',
         category: product.category,
@@ -259,8 +354,10 @@ const ProductDetail = () => {
     );
   }
 
+  // Calculate discount based on current price (which may be size-specific)
+  const currentPrice = getPrice();
   const discountPercentage = product.original_price 
-    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
+    ? Math.round(((product.original_price - currentPrice) / product.original_price) * 100)
     : 0;
 
   return (
@@ -362,9 +459,9 @@ const ProductDetail = () => {
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
                 <span className="text-2xl sm:text-3xl font-bold text-primary">
-                  {formatPrice(product.price)}
+                  {formatPrice(getPrice())}
                 </span>
-                {product.original_price && product.original_price > product.price && (
+                {product.original_price && product.original_price > getPrice() && (
                   <>
                     <span className="text-lg sm:text-xl text-muted-foreground line-through">
                       {formatPrice(product.original_price)}
@@ -425,9 +522,10 @@ const ProductDetail = () => {
                       }`}
                     >
                       <div 
-                        className={`w-8 h-8 rounded-full border-2 ${getColorClass(color)} ${
+                        className={`relative w-8 h-8 rounded-full border-2 ${
                           selectedColor === color ? 'ring-2 ring-primary/30' : ''
                         }`}
+                        style={{ backgroundColor: getColorHex(color) }}
                       />
                       <span className="text-xs font-medium capitalize">{color}</span>
                     </button>
@@ -437,7 +535,7 @@ const ProductDetail = () => {
             )}
 
             {/* Size Selection */}
-            {product.sizes && product.sizes.length > 0 && (
+            {getValidSizes().length > 0 && (
               <div>
                 <h3 className="font-semibold mb-3">Size</h3>
                 <Select value={selectedSize} onValueChange={setSelectedSize}>
@@ -445,7 +543,7 @@ const ProductDetail = () => {
                     <SelectValue placeholder="Select size" />
                   </SelectTrigger>
                   <SelectContent>
-                    {product.sizes.map((size) => (
+                    {getValidSizes().map((size) => (
                       <SelectItem key={size} value={size}>
                         {size}
                       </SelectItem>
@@ -541,7 +639,7 @@ const ProductDetail = () => {
           id: `buynow-${product.id}-${Date.now()}`,
           productId: product.id,
           name: product.name,
-          price: product.price,
+          price: getPrice(), // ✅ FIXED: Use getPrice() to get size-specific price
           color: selectedColor,
           size: selectedSize,
           quantity: quantity,

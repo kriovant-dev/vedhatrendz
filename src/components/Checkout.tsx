@@ -127,13 +127,129 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
 
   // Determine which items to use: buyNowItem for "Buy Now" or cart items for regular checkout
   const checkoutItems = buyNowItem ? [buyNowItem] : items;
+
+  // State to store refreshed prices from database
+  const [refreshedPrices, setRefreshedPrices] = useState<{ [key: string]: number }>({});
+
+  // Fetch current prices from Firebase for all cart items
+  const refreshItemPrices = useCallback(async () => {
+    console.log('🔄 refreshItemPrices called, checkoutItems:', checkoutItems);
+    
+    if (!checkoutItems || checkoutItems.length === 0) {
+      console.log('⚠️ No checkout items, clearing prices');
+      setRefreshedPrices({});
+      return;
+    }
+
+    try {
+      const pricesMap: { [key: string]: number } = {};
+      const productIds = Array.from(new Set(checkoutItems.map(item => item.productId)));
+      
+      console.log('📦 Fetching prices for product IDs:', productIds);
+
+      // Fetch all products by querying id field (matching ProductDetail.tsx approach)
+      for (const productId of productIds) {
+        console.log(`🔍 Querying product by id field: ${productId}`);
+        // Try to get by 'id' field first (like ProductDetail does)
+        let product = null;
+        let error = null;
+
+        // Method 1: Query by 'id' field (should work if product has id field)
+        const result1 = await FirebaseClient.getWhere('products', [
+          { field: 'id', operator: '==', value: productId }
+        ]);
+        
+        if (result1.data && result1.data.length > 0) {
+          product = result1.data[0];
+          console.log(`✅ Found product by id field: ${productId}`);
+        } else {
+          console.warn(`⚠️ Product not found by id field: ${productId}, trying document ID...`);
+          // Method 2: Try document ID directly as fallback
+          const result2 = await FirebaseClient.getByDocumentId('products', productId);
+          if (result2.data) {
+            product = result2.data;
+            console.log(`✅ Found product by document ID: ${productId}`);
+          } else {
+            console.warn(`❌ Failed to fetch product ${productId} by both methods, using cached price`);
+          }
+        }
+
+        if (!product) {
+          console.warn(`❌ Failed to fetch product ${productId}, using cached price`);
+          continue;
+        }
+
+        console.log(`✅ Got product: ${product.name}, size_prices:`, product.size_prices);
+
+        // For each cart item of this product, get the correct price
+        checkoutItems.forEach(item => {
+          if (item.productId === productId) {
+            let currentPrice = product.price; // Default to base price
+            console.log(`  → Checking item: ${item.name} (size: ${item.size})`);
+            console.log(`    Base price: ${product.price}, cached price: ${item.price}`);
+
+            // If product has size-specific pricing, use it
+            if (product.size_prices) {
+              const sizePrice = product.size_prices[item.size];
+              const defaultPrice = product.size_prices.default;
+
+              console.log(`    Size prices available: ${JSON.stringify(product.size_prices)}`);
+              console.log(`    Size '${item.size}' price: ${sizePrice}, default: ${defaultPrice}`);
+
+              if (sizePrice && sizePrice > 0) {
+                currentPrice = sizePrice; // Use size-specific price
+                console.log(`    ✅ Using size-specific price: ${sizePrice}`);
+              } else if (defaultPrice && defaultPrice > 0) {
+                currentPrice = defaultPrice; // Use default price
+                console.log(`    ✅ Using default price: ${defaultPrice}`);
+              }
+            } else {
+              console.log(`    ⚠️ No size_prices in product`);
+            }
+
+            // Store by cart item ID
+            console.log(`    💾 Storing: ${item.id} = ${currentPrice}`);
+            pricesMap[item.id] = currentPrice;
+          }
+        });
+      }
+
+      console.log('✅ Refreshed prices from database:', pricesMap);
+      setRefreshedPrices(pricesMap);
+    } catch (error) {
+      console.error('❌ Error refreshing prices:', error);
+      // Fall back to cached prices if fetch fails
+    }
+  }, [checkoutItems]);
+
+  // Refresh prices when dialog opens or checkout items change
+  useEffect(() => {
+    console.log('📡 useEffect triggered: isOpen =', isOpen, ', items.length =', items.length, ', buyNowItem =', !!buyNowItem);
+    if (isOpen && (items.length > 0 || buyNowItem)) {
+      console.log('🚀 Calling refreshItemPrices from useEffect');
+      refreshItemPrices();
+    }
+  }, [isOpen, items, buyNowItem, refreshItemPrices]);
   
-  // Calculate total based on checkout items
+  // Calculate total based on checkout items with refreshed prices
   const getCheckoutTotal = () => {
     if (buyNowItem) {
+      console.log('💳 Using buyNowItem price:', buyNowItem.price);
       return buyNowItem.price * buyNowItem.quantity;
     }
-    return getTotalPrice();
+
+    // Use refreshed prices if available, otherwise use cached prices
+    let total = 0;
+    for (const item of items) {
+      const refreshedPrice = refreshedPrices[item.id];
+      const finalPrice = refreshedPrice !== undefined ? refreshedPrice : item.price;
+      total += finalPrice * item.quantity;
+      
+      const source = refreshedPrice !== undefined ? '🔄 REFRESHED' : '💾 CACHED';
+      console.log(`${source}: ${item.name} (${item.size}) - Price: ${finalPrice}, Qty: ${item.quantity}, Subtotal: ${finalPrice * item.quantity}`);
+    }
+    console.log('💰 Checkout Total (with refreshed prices):', total);
+    return total;
   };
   
   const [shippingDetails, setShippingDetails] = useState<ShippingDetails>({
@@ -364,14 +480,19 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
         user_phone: shippingDetails.phone,
         user_email: user?.email || '',
         user_id: user?.uid,
-        order_items: checkoutItems.map(item => ({
-          id: item.productId,
-          name: item.name,
-          price: item.price,
-          color: item.color,
-          size: item.size,
-          quantity: item.quantity
-        })),
+        order_items: checkoutItems.map(item => {
+          // Use refreshed price if available, otherwise use cached price
+          const itemPrice = refreshedPrices[item.id] !== undefined ? refreshedPrices[item.id] : item.price;
+          console.log(`Order item ${item.name}: Using price ${itemPrice} (refreshed: ${refreshedPrices[item.id] !== undefined})`);
+          return {
+            id: item.productId,
+            name: item.name,
+            price: itemPrice, // Use refreshed price
+            color: item.color,
+            size: item.size,
+            quantity: item.quantity
+          };
+        }),
         items: itemsWithDeliveryInfo, // Use items with delivery info for emails
         shipping_address: {
           name: shippingDetails.fullName,
@@ -471,7 +592,7 @@ const Checkout: React.FC<CheckoutProps> = ({ isOpen, onClose, onOpen, buyNowItem
     } finally {
       setPaymentLoading(false);
     }
-  }, [user, shippingDetails, checkoutItems, totalPrice, shippingFee, finalTotal, buyNowItem, clearCart, onClose, onOpen, setStep, setPaymentLoading]);
+  }, [user, shippingDetails, checkoutItems, totalPrice, shippingFee, finalTotal, buyNowItem, clearCart, onClose, onOpen, setStep, setPaymentLoading, refreshedPrices]);
 
   const handlePayment = useCallback(async () => {
     if (!user) {
