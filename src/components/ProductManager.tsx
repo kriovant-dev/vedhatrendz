@@ -315,7 +315,6 @@ const ProductManager = () => {
           
           const results = await Promise.all(deletePromises);
           const successCount = results.filter(r => r.ok).length;
-          console.log(`Deleted ${successCount} of ${allFileNamesToDelete.length} images from R2`);
         } catch (imageError) {
           console.error('Failed to delete images from R2:', imageError);
           // Don't throw here as the product is already deleted from database

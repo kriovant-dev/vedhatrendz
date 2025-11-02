@@ -66,11 +66,10 @@ export default async function handler(req, res) {
     const sanitizedName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const objectKey = `${folder}/${timestamp}_${sanitizedName}`;
 
-    // Debug logging
-    console.log('🔧 Upload Debug:');
-    console.log('Bucket:', process.env.CLOUDFLARE_R2_BUCKET_NAME);
-    console.log('Object Key:', objectKey);
-    console.log('Content Type:', file.mimetype);
+    // Upload configuration
+    // Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME
+    // Object Key: objectKey
+    // Content Type: file.mimetype
 
     const uploadParams = {
       Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME,

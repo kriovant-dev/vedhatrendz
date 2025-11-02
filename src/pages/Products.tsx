@@ -395,8 +395,6 @@ const Sarees = () => {
                     alt={product.name}
                     className="w-full h-48 sm:h-56 md:h-64 object-cover transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
-                      // Log error for debugging but don't spam console
-                      console.warn('Image failed to load:', product.images[0]);
                       // Show fallback placeholder
                       e.currentTarget.style.display = 'none';
                       const parent = e.currentTarget.parentElement;

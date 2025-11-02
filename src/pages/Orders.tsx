@@ -379,23 +379,6 @@ const Orders: React.FC = () => {
               <RefreshCcw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
-            {process.env.NODE_ENV === 'development' && (
-              <Button 
-                variant="outline" 
-                onClick={async () => {
-                  try {
-                    const { data: allOrders } = await FirebaseClient.getAll('orders');
-                    toast.success(`Found ${allOrders?.length || 0} total orders in database`);
-                  } catch (error) {
-                    console.error('Error fetching all orders:', error);
-                    toast.error('Failed to fetch all orders');
-                  }
-                }}
-              >
-                <Package className="h-4 w-4 mr-2" />
-                Debug DB
-              </Button>
-            )}
             <Link to="/profile">
               <Button variant="outline">
                 <User className="h-4 w-4 mr-2" />
