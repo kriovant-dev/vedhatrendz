@@ -93,6 +93,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         size="icon"
                         className="h-6 w-6"
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        disabled={item.quantity <= 1}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
@@ -102,6 +103,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         size="icon"
                         className="h-6 w-6"
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        disabled={item.quantity >= (item.stock_quantity || item.quantity)}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
@@ -153,6 +155,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
     
     <Checkout
       isOpen={showCheckout}
+      onOpen={() => setShowCheckout(true)}
       onClose={() => setShowCheckout(false)}
     />
     </>

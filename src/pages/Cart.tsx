@@ -127,10 +127,16 @@ const Cart: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            disabled={item.quantity >= (item.stock_quantity || item.quantity)}
                             className="h-8 w-8 p-0"
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
+                          {item.stock_quantity && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              max {item.stock_quantity}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

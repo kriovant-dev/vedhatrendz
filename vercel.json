@@ -8,6 +8,12 @@
     },
     "api/delete-r2-image.js": {
       "maxDuration": 30
+    },
+    "api/create-razorpay-order.js": {
+      "maxDuration": 30
+    },
+    "api/verify-razorpay-signature.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -56,7 +62,7 @@
         },
         {
           "key": "X-Frame-Options",
-          "value": "DENY"
+          "value": "SAMEORIGIN"
         },
         {
           "key": "X-XSS-Protection",
@@ -69,6 +75,10 @@
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://api.razorpay.com https://apis.google.com https://www.gstatic.com https://fonts.googleapis.com; frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com https://apis.google.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://checkout.razorpay.com https://api.razorpay.com https://apis.google.com https://*.supabase.co https://api.clerk.com https://*.firebaseio.com https://*.imagekit.io https://pub-*.r2.dev;"
         }
       ]
     }

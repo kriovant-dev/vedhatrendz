@@ -131,7 +131,8 @@ const ProductDetail = () => {
       color: selectedColor,
       size: selectedSize,
       quantity: quantity,
-      image: displayImages[0] || product.images?.[0] || ''
+      image: displayImages[0] || product.images?.[0] || '',
+      stock_quantity: product.stock_quantity
     });
     
     toast.success(`Added ${quantity} item(s) to cart!`);

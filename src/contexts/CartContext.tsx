@@ -10,6 +10,7 @@ export interface CartItem {
   size: string;
   quantity: number;
   image?: string;
+  stock_quantity?: number; // Track product stock for validation
 }
 
 interface CartContextType {
@@ -89,9 +90,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setItems(prevItems =>
-      prevItems.map(item =>
-        item.id === itemId ? { ...item, quantity } : item
-      )
+      prevItems.map(item => {
+        if (item.id === itemId) {
+          // Validate against stock quantity
+          const maxQuantity = item.stock_quantity || quantity;
+          const validatedQuantity = Math.min(quantity, maxQuantity);
+          return { ...item, quantity: validatedQuantity };
+        }
+        return item;
+      })
     );
   };
 
