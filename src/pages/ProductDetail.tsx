@@ -461,6 +461,33 @@ const ProductDetail = () => {
                 )}
               </div>
             </div>
+            {/* Color Selection */}
+            {product.colors && product.colors.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3">Color: {selectedColor}</h3>
+                <div className="flex gap-3 flex-wrap">
+                  {product.colors.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`flex flex-col items-center gap-2 p-2 rounded-lg border-2 transition-all ${
+                        selectedColor === color 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      <div 
+                        className={`relative w-8 h-8 rounded-full border-2 ${
+                          selectedColor === color ? 'ring-2 ring-primary/30' : ''
+                        }`}
+                        style={{ backgroundColor: getColorHex(color) }}
+                      />
+                      <span className="text-xs font-medium capitalize">{color}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Product Details */}
             <div className="space-y-4">
@@ -493,34 +520,6 @@ const ProductDetail = () => {
                 </div>
               )}
             </div>
-
-            {/* Color Selection */}
-            {product.colors && product.colors.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-3">Color: {selectedColor}</h3>
-                <div className="flex gap-3 flex-wrap">
-                  {product.colors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={`flex flex-col items-center gap-2 p-2 rounded-lg border-2 transition-all ${
-                        selectedColor === color 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div 
-                        className={`relative w-8 h-8 rounded-full border-2 ${
-                          selectedColor === color ? 'ring-2 ring-primary/30' : ''
-                        }`}
-                        style={{ backgroundColor: getColorHex(color) }}
-                      />
-                      <span className="text-xs font-medium capitalize">{color}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Size Selection */}
             {getValidSizes().length > 0 && (
