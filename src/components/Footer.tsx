@@ -35,7 +35,7 @@ const Footer = () => {
   const developerInfo = {
     name: "Dev",
     email: "builtbydevx@gmail.com",
-    phone: "+91 XXXXXXXXXX" // Replace with your actual phone number
+    phone: "+91 8985541768" // Replace with your actual phone number
   };
 
   const copyToClipboard = async (text: string, label: string) => {
